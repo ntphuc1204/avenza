@@ -1,0 +1,145 @@
+/* =========================
+   DASHBOARD LAYOUT
+========================= */
+.admin-layout{
+  display: flex;
+}
+.dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+  overflow: hidden;
+  background: #f5f5f5;
+}
+
+.dashboard-sidebar {
+  width: 260px;
+  min-width: 260px;
+  transition: all 0.3s ease;
+  background: #001529;
+}
+
+.dashboard-main {
+  flex: 1;
+  width: calc(100% - 260px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dashboard-content {
+  padding: 16px;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* =========================
+   PAGE
+========================= */
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.page-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* =========================
+   TABLE
+========================= */
+
+.table-page {
+  width: 100%;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table-responsive .ant-table {
+  min-width: 1000px;
+}
+
+.table-responsive .ant-table-cell {
+  white-space: nowrap;
+}
+
+/* =========================
+   IMAGE
+========================= */
+
+.table-image {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 992px) {
+  .dashboard-sidebar {
+    width: 80px;
+    min-width: 80px;
+  }
+
+  .dashboard-main {
+    width: calc(100% - 80px);
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-layout {
+    flex-direction: column;
+  }
+
+  .dashboard-sidebar {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .dashboard-main {
+    width: 100%;
+  }
+
+  .dashboard-content {
+    padding: 10px;
+  }
+
+  .table-responsive .ant-table {
+    min-width: 800px;
+  }
+
+  .page-title {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 576px) {
+  .table-responsive .ant-table {
+    min-width: 700px;
+  }
+
+  .ant-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+}
