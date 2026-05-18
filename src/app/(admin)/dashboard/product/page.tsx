@@ -18,6 +18,7 @@ const ManageProductPage = async (props: IProps) => {
   const pageSize = props?.searchParams?.pageSize ?? 10;
 
   const session = await auth();
+  console.log(session);
 
   // danh sách sản phẩm
   const res = await sendRequest<IBackendRes<any>>({
@@ -67,6 +68,7 @@ const ManageProductPage = async (props: IProps) => {
           }
         }
         categories={categoryRes?.data?.results ?? []}
+        accessToken={session?.user?.access_token ?? ""}
       />
     </div>
   );

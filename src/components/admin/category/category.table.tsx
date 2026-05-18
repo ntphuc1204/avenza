@@ -107,12 +107,17 @@ const CategoryTable = ({ data, accessToken }: IProps) => {
     }
 
     try {
-      const payload = {
-        name: values.name,
-        slug: values.slug,
-        description: values.description,
+      const payload: any = {
+        name: values.name?.trim(),
       };
 
+      if (values.slug?.trim()) {
+        payload.slug = values.slug.trim();
+      }
+
+      if (values.description?.trim()) {
+        payload.description = values.description.trim();
+      }
       let res = null;
 
       if (editingCategory) {
@@ -269,6 +274,9 @@ const CategoryTable = ({ data, accessToken }: IProps) => {
           total={meta.total}
           showSizeChanger
           pageSizeOptions={["10", "20", "50", "100"]}
+          onChange={(page, pageSize) => {
+            console.log(page, pageSize);
+          }}
         />
       </div>
 

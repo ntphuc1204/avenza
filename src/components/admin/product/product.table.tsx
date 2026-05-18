@@ -12,6 +12,7 @@ import ProductCreate from "./product.create";
 import ProductUpdate from "./product.update";
 
 import { handleDeleteProductAction } from "@/utils/actions";
+import { auth } from "@/auth";
 
 interface IProduct {
   _id: string;
@@ -45,9 +46,9 @@ interface IProps {
   };
 
   categories?: any[];
+  accessToken: string;
 }
-
-const ProductTable = ({ data, categories = [] }: IProps) => {
+const ProductTable = ({ data, categories = [], accessToken }: IProps) => {
   const products = data?.results || [];
 
   const meta = data?.meta || {
@@ -56,7 +57,6 @@ const ProductTable = ({ data, categories = [] }: IProps) => {
     pages: 0,
     total: 0,
   };
-
   const pathname = usePathname();
 
   const searchParams = useSearchParams();
@@ -233,6 +233,7 @@ const ProductTable = ({ data, categories = [] }: IProps) => {
         isCreateModalOpen={isCreateModalOpen}
         setIsCreateModalOpen={setIsCreateModalOpen}
         categories={categories}
+        accessToken={accessToken}
       />
 
       <ProductUpdate
@@ -241,6 +242,7 @@ const ProductTable = ({ data, categories = [] }: IProps) => {
         dataUpdate={dataUpdate}
         setDataUpdate={setDataUpdate}
         categories={categories}
+        accessToken={accessToken}
       />
     </div>
   );

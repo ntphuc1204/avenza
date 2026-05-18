@@ -18,6 +18,7 @@ import {
 } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import { useState } from "react";
+import { uploadProductImages } from "@/utils/upload";
 
 const { TextArea } = Input;
 
@@ -25,15 +26,19 @@ interface IProps {
   isCreateModalOpen: boolean;
   setIsCreateModalOpen: (v: boolean) => void;
   categories?: any[];
+  accessToken: string;
 }
 
 const ProductCreate = (props: IProps) => {
-  const { isCreateModalOpen, setIsCreateModalOpen, categories = [] } = props;
+  const {
+    isCreateModalOpen,
+    setIsCreateModalOpen,
+    categories = [],
+    accessToken,
+  } = props;
 
   const [form] = Form.useForm();
-
   const [loading, setLoading] = useState(false);
-
   const [imageFiles, setImageFiles] = useState<UploadFile[]>([]);
 
   const handleCloseCreateModal = () => {
@@ -46,38 +51,36 @@ const ProductCreate = (props: IProps) => {
     setLoading(true);
 
     try {
-      const formData = new FormData();
+      const files = imageFiles
+        .map((f) => f.originFileObj)
+        .filter(Boolean) as File[];
 
-      formData.append("name", values.name);
-      formData.append("slug", values.slug || "");
-      formData.append("description", values.description || "");
-      formData.append("price", values.price);
-      formData.append("stock", values.stock);
-      formData.append("categoryId", values.categoryId);
-      formData.append("status", values.status);
-      formData.append("isFeatured", values.isFeatured || false);
+      let imageUrls: string[] = [];
 
-      imageFiles.forEach((file) => {
-        if (file.originFileObj) {
-          formData.append("images", file.originFileObj);
-        }
-      });
-
-      console.log("========== FORM DATA ==========");
-
-      for (const pair of formData.entries()) {
-        console.log(pair[0], pair[1]);
+      // 1. UPLOAD IMAGES TRƯỚC
+      if (files.length > 0) {
+        const uploadRes = await uploadProductImages(files, accessToken);
+        imageUrls = uploadRes?.map((i: any) => i.url) || [];
       }
 
-      const res = await handleCreateProductAction(formData);
+      // 2. CREATE PRODUCT
+      const payload = {
+        name: values.name,
+        slug: values.slug,
+        description: values.description,
+        price: Number(values.price),
+        stock: Number(values.stock),
+        categoryId: values.categoryId,
+        status: values.status,
+        isFeatured: !!values.isFeatured,
+        images: imageUrls, // 👈 backend cần string[]
+      };
 
-      console.log(res);
+      const res = await handleCreateProductAction(payload);
 
       if (res?.data) {
-        handleCloseCreateModal();
-
         message.success("Tạo sản phẩm thành công!");
-
+        handleCloseCreateModal();
         window.location.reload();
       } else {
         notification.error({
@@ -86,8 +89,6 @@ const ProductCreate = (props: IProps) => {
         });
       }
     } catch (error: any) {
-      console.log(error);
-
       notification.error({
         message: "Lỗi tạo sản phẩm",
         description: error?.message || "Có lỗi xảy ra",
@@ -101,14 +102,13 @@ const ProductCreate = (props: IProps) => {
     <Modal
       title="Thêm sản phẩm mới"
       open={isCreateModalOpen}
-      onCancel={() => handleCloseCreateModal()}
+      onCancel={handleCloseCreateModal}
       maskClosable={false}
       width={800}
       footer={[
-        <Button key="cancel" onClick={() => handleCloseCreateModal()}>
+        <Button key="cancel" onClick={handleCloseCreateModal}>
           Hủy
         </Button>,
-
         <Button
           key="submit"
           type="primary"
@@ -125,45 +125,27 @@ const ProductCreate = (props: IProps) => {
             <Form.Item
               label="Tên sản phẩm"
               name="name"
-              rules={[
-                {
-                  required: true,
-                  message: "Vui lòng nhập tên sản phẩm!",
-                },
-              ]}
+              rules={[{ required: true }]}
             >
-              <Input placeholder="Nhập tên sản phẩm" />
+              <Input />
             </Form.Item>
           </Col>
 
           <Col span={24} md={12}>
             <Form.Item label="Slug" name="slug">
-              <Input placeholder="Nhập slug sản phẩm" />
+              <Input />
             </Form.Item>
           </Col>
 
           <Col span={24}>
             <Form.Item label="Mô tả" name="description">
-              <TextArea rows={4} placeholder="Nhập mô tả sản phẩm" />
+              <TextArea rows={4} />
             </Form.Item>
           </Col>
 
           <Col span={24} md={12}>
-            <Form.Item
-              label="Giá"
-              name="price"
-              rules={[
-                {
-                  required: true,
-                  message: "Vui lòng nhập giá sản phẩm!",
-                },
-              ]}
-            >
-              <InputNumber
-                style={{ width: "100%" }}
-                min={0}
-                placeholder="Nhập giá"
-              />
+            <Form.Item label="Giá" name="price" rules={[{ required: true }]}>
+              <InputNumber style={{ width: "100%" }} min={0} />
             </Form.Item>
           </Col>
 
@@ -171,18 +153,9 @@ const ProductCreate = (props: IProps) => {
             <Form.Item
               label="Số lượng"
               name="stock"
-              rules={[
-                {
-                  required: true,
-                  message: "Vui lòng nhập số lượng!",
-                },
-              ]}
+              rules={[{ required: true }]}
             >
-              <InputNumber
-                style={{ width: "100%" }}
-                min={0}
-                placeholder="Nhập số lượng"
-              />
+              <InputNumber style={{ width: "100%" }} min={0} />
             </Form.Item>
           </Col>
 
@@ -190,18 +163,12 @@ const ProductCreate = (props: IProps) => {
             <Form.Item
               label="Danh mục"
               name="categoryId"
-              rules={[
-                {
-                  required: true,
-                  message: "Vui lòng chọn danh mục!",
-                },
-              ]}
+              rules={[{ required: true }]}
             >
               <Select
-                placeholder="Chọn danh mục"
-                options={categories.map((item) => ({
-                  label: item.name,
-                  value: item._id,
+                options={categories.map((c) => ({
+                  label: c.name,
+                  value: c._id,
                 }))}
               />
             </Form.Item>
@@ -211,14 +178,8 @@ const ProductCreate = (props: IProps) => {
             <Form.Item label="Trạng thái" name="status" initialValue="ACTIVE">
               <Select
                 options={[
-                  {
-                    label: "Hoạt động",
-                    value: "ACTIVE",
-                  },
-                  {
-                    label: "Ẩn",
-                    value: "INACTIVE",
-                  },
+                  { label: "Hoạt động", value: "ACTIVE" },
+                  { label: "Ẩn", value: "INACTIVE" },
                 ]}
               />
             </Form.Item>
@@ -226,7 +187,7 @@ const ProductCreate = (props: IProps) => {
 
           <Col span={24}>
             <Form.Item
-              label="Sản phẩm nổi bật"
+              label="Nổi bật"
               name="isFeatured"
               valuePropName="checked"
             >
@@ -235,38 +196,17 @@ const ProductCreate = (props: IProps) => {
           </Col>
 
           <Col span={24}>
-            <Form.Item label="Hình ảnh sản phẩm">
+            <Form.Item label="Hình ảnh">
               <Upload
                 multiple
                 beforeUpload={(file) => {
-                  console.log("========== UPLOAD FILE ==========");
-                  console.log(file);
-
-                  setImageFiles((prev) => {
-                    const updated = [...prev, file];
-
-                    console.log("========== UPDATED IMAGE FILES ==========");
-                    console.log(updated);
-
-                    return updated;
-                  });
-
+                  setImageFiles((prev) => [...prev, file]);
                   return false;
                 }}
                 onRemove={(file) => {
-                  console.log("========== REMOVE FILE ==========");
-                  console.log(file);
-
-                  setImageFiles((prev) => {
-                    const updated = prev.filter(
-                      (item) => item.uid !== file.uid,
-                    );
-
-                    console.log("========== AFTER REMOVE ==========");
-                    console.log(updated);
-
-                    return updated;
-                  });
+                  setImageFiles((prev) =>
+                    prev.filter((f) => f.uid !== file.uid),
+                  );
                 }}
                 fileList={imageFiles as any}
               >

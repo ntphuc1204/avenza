@@ -114,7 +114,10 @@ const ProductDetailPage = () => {
       ) : (
         <Row gutter={[24, 24]}>
           <Col xs={24} md={12}>
-            <Card style={{ borderRadius: 20 }} styles={{ body: { padding: 0 } }}>
+            <Card
+              style={{ borderRadius: 20 }}
+              styles={{ body: { padding: 0 } }}
+            >
               <div
                 style={{
                   background: "#fafafa",

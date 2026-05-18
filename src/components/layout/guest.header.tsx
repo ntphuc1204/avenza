@@ -74,6 +74,18 @@ const GuestHeader = () => {
         </Button>
       </Link>
 
+      {session?.user && (
+        <Link href="/profile">
+          <Button
+            type="text"
+            icon={<UserOutlined />}
+            style={{ width: screens.md ? "auto" : "100%" }}
+          >
+            Hồ sơ
+          </Button>
+        </Link>
+      )}
+
       <Link href="/ai">
         <Button
           type="text"
@@ -83,6 +95,18 @@ const GuestHeader = () => {
           AI
         </Button>
       </Link>
+
+      {session?.user?.role === "ADMIN" && (
+        <Link href="/dashboard">
+          <Button
+            type="primary"
+            icon={<AppstoreOutlined />}
+            style={{ width: screens.md ? "auto" : "100%" }}
+          >
+            Admin
+          </Button>
+        </Link>
+      )}
 
       {session?.user ? (
         <Button

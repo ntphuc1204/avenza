@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 import AdminContent from "@/components/layout/admin.content";
 import AdminFooter from "@/components/layout/admin.footer";
 import AdminHeader from "@/components/layout/admin.header";
@@ -13,6 +14,14 @@ const AdminLayout = async ({
   children: React.ReactNode;
 }>) => {
   const session = await auth();
+
+  if (!session) {
+    redirect("/auth/login");
+  }
+
+  if (session.user.role !== "ADMIN") {
+    redirect("/");
+  }
 
   return (
     <AdminContextProvider>

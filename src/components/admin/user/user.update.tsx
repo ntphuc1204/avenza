@@ -1,4 +1,6 @@
 import { handleUpdateUserAction } from "@/utils/actions";
+import { uploadUserImage } from "@/utils/upload";
+
 import {
   Modal,
   Input,
@@ -9,6 +11,7 @@ import {
   notification,
   Button,
 } from "antd";
+
 import { useEffect, useState } from "react";
 
 interface IProps {
@@ -16,11 +19,17 @@ interface IProps {
   setIsUpdateModalOpen: (v: boolean) => void;
   dataUpdate: any;
   setDataUpdate: any;
+  accessToken: string;
 }
 
 const UserUpdate = (props: IProps) => {
-  const { isUpdateModalOpen, setIsUpdateModalOpen, dataUpdate, setDataUpdate } =
-    props;
+  const {
+    isUpdateModalOpen,
+    setIsUpdateModalOpen,
+    dataUpdate,
+    setDataUpdate,
+    accessToken,
+  } = props;
 
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -34,6 +43,7 @@ const UserUpdate = (props: IProps) => {
         phone: dataUpdate.phone,
         address: dataUpdate.address,
       });
+
       setImageFile(null);
     }
   }, [dataUpdate, form]);
@@ -46,35 +56,67 @@ const UserUpdate = (props: IProps) => {
   };
 
   const onFinish = async (values: any) => {
-    if (dataUpdate) {
-      setLoading(true);
-      try {
-        const payload = {
-          _id: dataUpdate._id,
-          name: values.name,
-          phone: values.phone,
-          address: values.address,
-          image: imageFile ?? undefined,
-        };
-        const res = await handleUpdateUserAction(payload);
-        if (res?.data) {
-          handleCloseUpdateModal();
-          message.success("Cập nhật người dùng thành công!");
-          window.location.reload();
-        } else {
-          notification.error({
-            message: "Lỗi cập nhật người dùng",
-            description: res?.message || "Có lỗi xảy ra",
-          });
-        }
-      } catch (error: any) {
+    if (!dataUpdate) return;
+
+    setLoading(true);
+
+    try {
+      console.log("FORM VALUES:", values);
+      console.log("IMAGE FILE:", imageFile);
+
+      // ===== 1. UPLOAD IMAGE FIRST =====
+      let imageUrl = dataUpdate.image || "";
+
+      if (imageFile) {
+        const uploadRes = await uploadUserImage(
+          imageFile,
+          accessToken
+        );
+
+        console.log("UPLOAD RESPONSE:", uploadRes);
+
+        imageUrl = uploadRes?.data?.image || "";
+      }
+
+      // ===== 2. SEND ONLY PLAIN OBJECT =====
+      const payload = {
+        _id: dataUpdate._id,
+        name: values.name,
+        phone: values.phone,
+        address: values.address,
+        image: imageUrl,
+      };
+
+      console.log("UPDATE PAYLOAD:", payload);
+
+      const res: any = await handleUpdateUserAction(payload);
+
+      console.log("UPDATE RESPONSE:", res);
+
+      if (res?.data) {
+        handleCloseUpdateModal();
+
+        message.success("Cập nhật người dùng thành công!");
+
+        window.location.reload();
+      } else {
         notification.error({
           message: "Lỗi cập nhật người dùng",
-          description: error?.message || "Có lỗi xảy ra",
+          description: res?.message || "Có lỗi xảy ra",
         });
-      } finally {
-        setLoading(false);
       }
+    } catch (error: any) {
+      console.error("UPDATE ERROR:", error);
+
+      notification.error({
+        message: "Lỗi cập nhật người dùng",
+        description:
+          error?.response?.data?.message ||
+          error?.message ||
+          "Có lỗi xảy ra",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -82,10 +124,10 @@ const UserUpdate = (props: IProps) => {
     <Modal
       title="Cập nhật người dùng"
       open={isUpdateModalOpen}
-      onCancel={() => handleCloseUpdateModal()}
+      onCancel={handleCloseUpdateModal}
       maskClosable={false}
       footer={[
-        <Button key="cancel" onClick={() => handleCloseUpdateModal()}>
+        <Button key="cancel" onClick={handleCloseUpdateModal}>
           Hủy
         </Button>,
         <Button
@@ -98,11 +140,11 @@ const UserUpdate = (props: IProps) => {
         </Button>,
       ]}
     >
-      <Form name="basic" onFinish={onFinish} layout="vertical" form={form}>
+      <Form form={form} layout="vertical" onFinish={onFinish}>
         <Row gutter={[15, 15]}>
           <Col span={24} md={12}>
             <Form.Item label="Email" name="email">
-              <Input type="email" disabled />
+              <Input disabled />
             </Form.Item>
           </Col>
 
@@ -110,11 +152,12 @@ const UserUpdate = (props: IProps) => {
             <Form.Item
               label="Tên người dùng"
               name="name"
-              rules={[{ required: true, message: "Vui lòng nhập tên!" }]}
+              rules={[{ required: true }]}
             >
               <Input placeholder="Nhập tên" />
             </Form.Item>
           </Col>
+
           <Col span={24} md={12}>
             <Form.Item label="Điện thoại" name="phone">
               <Input placeholder="Nhập số điện thoại" />
@@ -126,15 +169,15 @@ const UserUpdate = (props: IProps) => {
               <Input placeholder="Nhập địa chỉ" />
             </Form.Item>
           </Col>
+
           <Col span={24}>
             <Form.Item label="Ảnh đại diện">
               <Input
                 type="file"
                 accept="image/*"
-                onChange={(event) => {
-                  const file = event.target.files?.[0] ?? null;
-                  setImageFile(file);
-                }}
+                onChange={(e) =>
+                  setImageFile(e.target.files?.[0] ?? null)
+                }
               />
             </Form.Item>
           </Col>

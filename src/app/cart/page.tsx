@@ -52,13 +52,15 @@ const CartPage = () => {
       },
     });
 
-    if (res?.data?.user) {
-      setUserProfile(res.data.user);
+    const profileData = res?.data?.user ?? res?.data;
+
+    if (profileData) {
+      setUserProfile(profileData);
 
       form.setFieldsValue({
-        recipientName: res.data.user.name || "",
-        phone: res.data.user.phone || "",
-        address: res.data.user.address || "",
+        recipientName: profileData.name || "",
+        phone: profileData.phone || "",
+        address: profileData.address || "",
         paymentMethod: "COD",
       });
     }

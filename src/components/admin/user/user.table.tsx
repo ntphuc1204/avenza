@@ -39,9 +39,11 @@ interface IProps {
     meta: IMeta;
     results: IUser[];
   };
+
+  accessToken: string;
 }
 
-const UserTable = ({ data }: IProps) => {
+const UserTable = ({ data, accessToken }: IProps) => {
   const users = data?.results || [];
 
   const meta = data?.meta || {
@@ -231,6 +233,7 @@ const UserTable = ({ data }: IProps) => {
       <UserCreate
         isCreateModalOpen={isCreateModalOpen}
         setIsCreateModalOpen={setIsCreateModalOpen}
+        accessToken={accessToken}
       />
 
       <UserUpdate
@@ -238,6 +241,7 @@ const UserTable = ({ data }: IProps) => {
         setIsUpdateModalOpen={setIsUpdateModalOpen}
         dataUpdate={dataUpdate}
         setDataUpdate={setDataUpdate}
+        accessToken={accessToken}
       />
     </div>
   );

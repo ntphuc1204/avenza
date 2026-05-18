@@ -208,6 +208,14 @@ const HomePage = () => {
                   Xem sản phẩm nổi bật
                 </Button>
 
+                {session?.user?.role === "ADMIN" && (
+                  <Link href="/dashboard">
+                    <Button type="default" block>
+                      Vào giao diện Admin
+                    </Button>
+                  </Link>
+                )}
+
                 {!session?.user && (
                   <Link href="/auth/login">
                     <Button block>Đăng nhập để đặt hàng</Button>

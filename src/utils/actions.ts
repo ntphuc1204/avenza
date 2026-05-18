@@ -54,20 +54,34 @@ const buildFormData = (data: any) => {
 
 const uploadImage = async (image: File) => {
     const session = await auth();
+
     const formData = new FormData();
+
     formData.append('image', image);
 
-    const res = await sendRequestFile<IBackendRes<{ image: string }>>({
-        url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/users/upload-image`,
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${session?.user?.access_token}`,
-        },
-        body: formData,
-    });
+    console.log("UPLOAD FILE:", image);
+
+    const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/users/upload-image`,
+        {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${session?.user?.access_token}`,
+            },
+            body: formData,
+        }
+    );
+
+    const res = await response.json();
+
+    console.log("UPLOAD RESPONSE:", res);
+
+    if (!response.ok) {
+        throw new Error(res?.message || 'Upload ảnh thất bại');
+    }
 
     if (!res?.data?.image) {
-        throw new Error(res?.message || 'Upload ảnh thất bại');
+        throw new Error('Không nhận được image url');
     }
 
     return res.data.image;
@@ -75,11 +89,6 @@ const uploadImage = async (image: File) => {
 
 export const handleCreateUserAction = async (data: any) => {
     const session = await auth();
-    const payload: any = { ...data };
-
-    if (payload.image instanceof File) {
-        payload.image = await uploadImage(payload.image);
-    }
 
     const res = await sendRequest<IBackendRes<any>>({
         url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/users`,
@@ -87,35 +96,32 @@ export const handleCreateUserAction = async (data: any) => {
         headers: {
             Authorization: `Bearer ${session?.user?.access_token}`,
         },
-        body: payload,
+        body: data,
     });
 
     revalidateTag('list-users');
+
     return res;
 }
 
-export const handleUpdateUserAction = async (data: any) => {
-    const session = await auth();
-    const payload: any = { ...data };
+    export const handleUpdateUserAction = async (data: any) => {
+        const session = await auth();
 
-    if (payload.image instanceof File) {
-        payload.image = await uploadImage(payload.image);
-    }
+        const res = await sendRequest({
+            url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/users`,
+            method: 'PATCH',
+            headers: {
+                Authorization: `Bearer ${session?.user?.access_token}`,
+            },
+            body: data, // chỉ plain object
+        });
 
-    const res = await sendRequest<IBackendRes<any>>({
-        url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/users`,
-        method: 'PATCH',
-        headers: {
-            Authorization: `Bearer ${session?.user?.access_token}`,
-        },
-        body: payload,
-    });
-
-    revalidateTag('list-users');
-    return res;
-}
-
-export const handleDeleteUserAction = async (id: any) => {
+        revalidateTag('list-users');
+        return res;
+    };
+    export const handleDeleteUserAction = async (
+        id: string,
+    ) => {
     const session = await auth();
     const res = await sendRequest<IBackendRes<any>>({
         url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/users/${id}`,
@@ -129,36 +135,35 @@ export const handleDeleteUserAction = async (id: any) => {
     return res;
 }
 export const handleCreateProductAction = async (data: any) => {
-    const session = await auth();
+  const session = await auth();
 
-    const payload: any = { ...data };
+  const formData = new FormData();
 
-    // upload nhiều ảnh nếu có
-    if (payload.images && Array.isArray(payload.images)) {
-        payload.images = await Promise.all(
-            payload.images.map(async (item: any) => {
-                if (item instanceof File) {
-                    return await uploadImage(item);
-                }
-                return item;
-            })
-        );
-    }
+  formData.append("name", data.name);
+  formData.append("slug", data.slug || "");
+  formData.append("description", data.description || "");
+  formData.append("price", String(data.price));
+  formData.append("stock", String(data.stock));
+  formData.append("categoryId", data.categoryId);
+  formData.append("status", data.status);
+  formData.append("isFeatured", String(data.isFeatured));
 
-    const res = await sendRequest<IBackendRes<any>>({
-        url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/products`,
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${session?.user?.access_token}`,
-        },
-        body: payload,
+  if (Array.isArray(data.images)) {
+    data.images.forEach((file: File) => {
+      formData.append("images", file);
     });
+  }
 
-    revalidateTag('list-products');
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/products`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${session?.user?.access_token}`,
+    },
+    body: formData,
+  });
 
-    return res;
+  return res.json();
 };
-
 export const handleUpdateProductAction = async (data: any) => {
     const session = await auth();
 
@@ -176,7 +181,7 @@ export const handleUpdateProductAction = async (data: any) => {
         );
     }
 
-    const res = await sendRequest<IBackendRes<any>>({
+    const res: any = await sendRequest({
         url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/products/${payload._id}`,
         method: 'PATCH',
         headers: {
@@ -186,19 +191,19 @@ export const handleUpdateProductAction = async (data: any) => {
     });
 
     revalidateTag('list-products');
-
     return res;
 };
-export const handleDeleteProductAction = async (id: any) => {
+export const handleDeleteProductAction = async (id: string) => {
     const session = await auth();
-    const res = await sendRequest<IBackendRes<any>>({
+
+    const res: any = await sendRequest({
         url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/products/${id}`,
         method: "DELETE",
         headers: {
             Authorization: `Bearer ${session?.user?.access_token}`,
         },
-    })
+    });
 
-    revalidateTag("list-products")
+    revalidateTag("list-products");
     return res;
-}
+};

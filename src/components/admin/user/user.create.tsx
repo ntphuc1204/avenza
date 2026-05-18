@@ -1,4 +1,5 @@
 import { handleCreateUserAction } from "@/utils/actions";
+import { uploadUserImage } from "@/utils/upload";
 import {
   Modal,
   Input,
@@ -14,10 +15,11 @@ import { useState } from "react";
 interface IProps {
   isCreateModalOpen: boolean;
   setIsCreateModalOpen: (v: boolean) => void;
+  accessToken: string;
 }
 
 const UserCreate = (props: IProps) => {
-  const { isCreateModalOpen, setIsCreateModalOpen } = props;
+  const { isCreateModalOpen, setIsCreateModalOpen, accessToken } = props;
 
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -31,26 +33,55 @@ const UserCreate = (props: IProps) => {
 
   const onFinish = async (values: any) => {
     setLoading(true);
+
     try {
+      console.log("FORM VALUES:", values);
+
+      console.log("IMAGE FILE:", imageFile);
+
+      let imageUrl = "";
+
+      if (imageFile) {
+        const uploadRes = await uploadUserImage(imageFile, accessToken);
+
+        imageUrl = uploadRes?.data?.image || "";
+      }
+
       const payload = {
         ...values,
-        image: imageFile ?? undefined,
+        image: imageUrl,
       };
+      console.log("PAYLOAD:", payload);
+
       const res = await handleCreateUserAction(payload);
+
+      console.log("CREATE RESPONSE:", res);
+
       if (res?.data) {
         handleCloseCreateModal();
+
         message.success("Tạo người dùng thành công!");
+
         window.location.reload();
       } else {
+        console.error("CREATE FAILED:", res);
+
         notification.error({
           message: "Lỗi tạo người dùng",
           description: res?.message || "Có lỗi xảy ra",
         });
       }
     } catch (error: any) {
+      console.error("CREATE ERROR:", error);
+
+      console.error("ERROR RESPONSE:", error?.response);
+
+      console.error("ERROR DATA:", error?.response?.data);
+
       notification.error({
         message: "Lỗi tạo người dùng",
-        description: error?.message || "Có lỗi xảy ra",
+        description:
+          error?.response?.data?.message || error?.message || "Có lỗi xảy ra",
       });
     } finally {
       setLoading(false);

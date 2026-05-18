@@ -77,21 +77,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       const pathname = request.nextUrl.pathname;
 
-      // nếu chưa login
-      if (!isLoggedIn) {
-        return false;
-      }
+      const isAdminRoute = pathname.startsWith("/dashboard");
 
-      // route admin
-      const isAdminRoute =
-        pathname.startsWith("/dashboard");
-
-      // USER không được vào dashboard
-      if (
-        isAdminRoute &&
-        auth?.user?.role !== "ADMIN"
-      ) {
-        return false;
+      if (isAdminRoute) {
+        return isLoggedIn && auth?.user?.role === "ADMIN";
       }
 
       return true;

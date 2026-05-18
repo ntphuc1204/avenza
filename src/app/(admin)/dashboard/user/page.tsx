@@ -28,7 +28,10 @@ const ManageUserPage = async (props: IProps) => {
 
   return (
     <div>
-      <UserTable data={res?.data ?? { meta: {}, results: [] }} />
+      <UserTable
+        data={res?.data}
+        accessToken={session?.user?.access_token ?? ""}
+      />
     </div>
   );
 };
