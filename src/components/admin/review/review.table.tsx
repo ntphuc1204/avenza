@@ -1,6 +1,16 @@
 "use client";
 
-import { Button, Form, Input, message, Modal, Popconfirm, Space, Table, Tag } from "antd";
+import {
+  Button,
+  Form,
+  Input,
+  message,
+  Modal,
+  Popconfirm,
+  Space,
+  Table,
+  Tag,
+} from "antd";
 import { ColumnsType } from "antd/es/table";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -78,7 +88,7 @@ const ReviewTable = (props: IProps) => {
         title: "Mã sản phẩm",
         dataIndex: "productId",
         width: 200,
-        render: (productId) => (productId?._id || productId || "-"),
+        render: (productId) => productId?._id || productId || "-",
       },
       {
         title: "Người đánh giá",
@@ -99,7 +109,8 @@ const ReviewTable = (props: IProps) => {
       {
         title: "Thời gian",
         width: 180,
-        render: (_: any, record: IReview) => record.createdAt ? new Date(record.createdAt).toLocaleString() : "-",
+        render: (_: any, record: IReview) =>
+          record.createdAt ? new Date(record.createdAt).toLocaleString() : "-",
       },
       {
         title: "Hành động",
@@ -110,7 +121,10 @@ const ReviewTable = (props: IProps) => {
               type="default"
               onClick={() => {
                 setEditingReview(record);
-                form.setFieldsValue({ rating: record.rating, comment: record.comment });
+                form.setFieldsValue({
+                  rating: record.rating,
+                  comment: record.comment,
+                });
                 setIsModalOpen(true);
               }}
             >
@@ -154,7 +168,14 @@ const ReviewTable = (props: IProps) => {
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 20,
+        }}
+      >
         <h2>Quản lý Reviews</h2>
       </div>
       <Table
@@ -177,7 +198,11 @@ const ReviewTable = (props: IProps) => {
         okText="Lưu"
       >
         <Form form={form} layout="vertical" onFinish={handleSave}>
-          <Form.Item name="rating" label="Rating" rules={[{ required: true, message: "Vui lòng nhập rating" }]}>
+          <Form.Item
+            name="rating"
+            label="Rating"
+            rules={[{ required: true, message: "Vui lòng nhập rating" }]}
+          >
             <Input type="number" min={1} max={5} />
           </Form.Item>
           <Form.Item name="comment" label="Nội dung">

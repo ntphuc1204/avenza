@@ -23,7 +23,10 @@ const ManageCartPage = async (props: IProps) => {
 
   return (
     <div>
-      <CartManager data={res?.data ?? { items: [], totalPrice: 0 }} accessToken={session?.user?.access_token} />
+      <CartManager
+        data={res?.data ?? { items: [], totalPrice: 0 }}
+        accessToken={session?.user?.access_token}
+      />
     </div>
   );
 };

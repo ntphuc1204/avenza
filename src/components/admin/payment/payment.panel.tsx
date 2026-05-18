@@ -49,10 +49,18 @@ const PaymentPanel = ({ accessToken }: IProps) => {
     <div style={{ maxWidth: 720 }}>
       <Typography.Title level={3}>Quản lý Payments</Typography.Title>
       <Form layout="vertical" onFinish={onFinish}>
-        <Form.Item name="orderId" label="Order ID" rules={[{ required: true, message: "Vui lòng nhập orderId" }]}>
+        <Form.Item
+          name="orderId"
+          label="Order ID"
+          rules={[{ required: true, message: "Vui lòng nhập orderId" }]}
+        >
           <Input />
         </Form.Item>
-        <Form.Item name="amount" label="Amount (VND)" rules={[{ required: true, message: "Vui lòng nhập số tiền" }]}>
+        <Form.Item
+          name="amount"
+          label="Amount (VND)"
+          rules={[{ required: true, message: "Vui lòng nhập số tiền" }]}
+        >
           <Input type="number" />
         </Form.Item>
         <Form.Item>
@@ -66,13 +74,24 @@ const PaymentPanel = ({ accessToken }: IProps) => {
         <Result
           status="success"
           title="Kết quả thanh toán"
-          subTitle={paymentResponse.paymentUrl ? "Đã nhận URL thanh toán VNPay." : paymentResponse.message}
+          subTitle={
+            paymentResponse.paymentUrl
+              ? "Đã nhận URL thanh toán VNPay."
+              : paymentResponse.message
+          }
           extra={
-            paymentResponse.paymentUrl ? [
-              <Button key="link" type="primary" href={paymentResponse.paymentUrl} target="_blank">
-                Mở VNPay
-              </Button>,
-            ] : []
+            paymentResponse.paymentUrl
+              ? [
+                  <Button
+                    key="link"
+                    type="primary"
+                    href={paymentResponse.paymentUrl}
+                    target="_blank"
+                  >
+                    Mở VNPay
+                  </Button>,
+                ]
+              : []
           }
         >
           <Typography.Text code style={{ wordBreak: "break-all" }}>

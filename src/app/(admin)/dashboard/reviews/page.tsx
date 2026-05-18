@@ -23,7 +23,15 @@ const ManageReviewPage = async (props: IProps) => {
 
   return (
     <div>
-      <ReviewTable data={res?.data ?? { meta: { current: 1, pageSize: 20, pages: 0, total: 0 }, results: [] }} accessToken={session?.user?.access_token} />
+      <ReviewTable
+        data={
+          res?.data ?? {
+            meta: { current: 1, pageSize: 20, pages: 0, total: 0 },
+            results: [],
+          }
+        }
+        accessToken={session?.user?.access_token}
+      />
     </div>
   );
 };

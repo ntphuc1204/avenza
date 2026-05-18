@@ -1,6 +1,16 @@
 "use client";
 
-import { Button, Card, Divider, Form, Input, message, Space, Spin, Typography } from "antd";
+import {
+  Button,
+  Card,
+  Divider,
+  Form,
+  Input,
+  message,
+  Space,
+  Spin,
+  Typography,
+} from "antd";
 import { useEffect, useState } from "react";
 import { sendRequest } from "@/utils/api";
 
@@ -139,7 +149,11 @@ const AiPanel = ({ accessToken }: IProps) => {
               />
             </Form.Item>
             <Form.Item>
-              <Button type="primary" onClick={handleRecommend} loading={loading}>
+              <Button
+                type="primary"
+                onClick={handleRecommend}
+                loading={loading}
+              >
                 Gợi ý sản phẩm
               </Button>
             </Form.Item>

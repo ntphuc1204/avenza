@@ -40,7 +40,9 @@ const CategoryTable = (props: IProps) => {
     total: 0,
   };
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<ICategory | null>(null);
+  const [editingCategory, setEditingCategory] = useState<ICategory | null>(
+    null,
+  );
   const [form] = Form.useForm();
   const router = useRouter();
 
@@ -69,7 +71,9 @@ const CategoryTable = (props: IProps) => {
         title: "Thời gian",
         width: 180,
         render: (_: any, record: ICategory) => {
-          return record.createdAt ? new Date(record.createdAt).toLocaleString() : "-";
+          return record.createdAt
+            ? new Date(record.createdAt).toLocaleString()
+            : "-";
         },
       },
       {
@@ -165,7 +169,11 @@ const CategoryTable = (props: IProps) => {
       }
 
       if (res?.data) {
-        message.success(editingCategory ? "Cập nhật danh mục thành công" : "Tạo danh mục thành công");
+        message.success(
+          editingCategory
+            ? "Cập nhật danh mục thành công"
+            : "Tạo danh mục thành công",
+        );
         setIsModalOpen(false);
         setEditingCategory(null);
         form.resetFields();
@@ -180,7 +188,14 @@ const CategoryTable = (props: IProps) => {
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 20,
+        }}
+      >
         <h2>Quản lý danh mục</h2>
         <Button
           type="primary"
@@ -221,7 +236,11 @@ const CategoryTable = (props: IProps) => {
         okText="Lưu"
       >
         <Form form={form} layout="vertical" onFinish={handleSave}>
-          <Form.Item name="name" label="Tên danh mục" rules={[{ required: true, message: "Vui lòng nhập tên danh mục" }]}>
+          <Form.Item
+            name="name"
+            label="Tên danh mục"
+            rules={[{ required: true, message: "Vui lòng nhập tên danh mục" }]}
+          >
             <Input />
           </Form.Item>
           <Form.Item name="slug" label="Slug">

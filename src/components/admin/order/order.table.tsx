@@ -79,7 +79,9 @@ const OrderTable = (props: IProps) => {
         width: 180,
         render: (userId: any) => {
           if (!userId) return "-";
-          return typeof userId === "string" ? userId : userId?.email || userId?._id || "-";
+          return typeof userId === "string"
+            ? userId
+            : userId?.email || userId?._id || "-";
         },
       },
       {
@@ -93,7 +95,12 @@ const OrderTable = (props: IProps) => {
         dataIndex: "orderStatus",
         width: 180,
         render: (status: string) => {
-          const color = status === "DELIVERED" ? "green" : status === "CANCELLED" ? "red" : "orange";
+          const color =
+            status === "DELIVERED"
+              ? "green"
+              : status === "CANCELLED"
+                ? "red"
+                : "orange";
           return <Tag color={color}>{status}</Tag>;
         },
       },
@@ -102,7 +109,12 @@ const OrderTable = (props: IProps) => {
         dataIndex: "paymentStatus",
         width: 180,
         render: (status: string) => {
-          const color = status === "SUCCESS" ? "green" : status === "FAILED" ? "red" : "orange";
+          const color =
+            status === "SUCCESS"
+              ? "green"
+              : status === "FAILED"
+                ? "red"
+                : "orange";
           return <Tag color={color}>{status}</Tag>;
         },
       },
@@ -119,7 +131,14 @@ const OrderTable = (props: IProps) => {
         title: "Hành động",
         width: 220,
         render: (_: any, record: IOrder) => (
-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
             <Select
               value={record.orderStatus}
               style={{ width: 180 }}
@@ -153,7 +172,10 @@ const OrderTable = (props: IProps) => {
                   setUpdatingId(null);
                 }
               }}
-              options={STATUS_OPTIONS.map((status) => ({ value: status, label: status }))}
+              options={STATUS_OPTIONS.map((status) => ({
+                value: status,
+                label: status,
+              }))}
             />
           </div>
         ),
@@ -164,7 +186,14 @@ const OrderTable = (props: IProps) => {
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 20,
+        }}
+      >
         <h2>Quản lý đơn hàng</h2>
       </div>
       <Table
@@ -179,7 +208,10 @@ const OrderTable = (props: IProps) => {
                 <strong>Sản phẩm:</strong>
               </div>
               {record.products?.map((item, index) => (
-                <div key={`${item.productId}-${index}`} style={{ marginBottom: 8, paddingLeft: 12 }}>
+                <div
+                  key={`${item.productId}-${index}`}
+                  style={{ marginBottom: 8, paddingLeft: 12 }}
+                >
                   <div>
                     <strong>{item.name || item.productId}</strong>
                   </div>

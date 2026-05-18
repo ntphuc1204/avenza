@@ -53,7 +53,7 @@ const AdminCard = () => {
 
         const orderRes = await sendRequest<IBackendRes<any>>({
           url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/orders/dashboard/stats`,
-          method: 'GET',
+          method: "GET",
           queryParams,
           headers: {
             Authorization: `Bearer ${session?.user?.access_token}`,
@@ -78,7 +78,7 @@ const AdminCard = () => {
           });
         }
       } catch (error) {
-        console.error('Error fetching statistics:', error);
+        console.error("Error fetching statistics:", error);
       } finally {
         setLoading(false);
       }
@@ -91,13 +91,19 @@ const AdminCard = () => {
 
   const orderStatusChart = useMemo(
     () =>
-      Object.entries(orderStats.orderStatuses).map(([name, value]) => ({ name, value })),
+      Object.entries(orderStats.orderStatuses).map(([name, value]) => ({
+        name,
+        value,
+      })),
     [orderStats.orderStatuses],
   );
 
   const paymentStatusChart = useMemo(
     () =>
-      Object.entries(orderStats.paymentStatuses).map(([name, value]) => ({ name, value })),
+      Object.entries(orderStats.paymentStatuses).map(([name, value]) => ({
+        name,
+        value,
+      })),
     [orderStats.paymentStatuses],
   );
 
@@ -110,9 +116,9 @@ const AdminCard = () => {
             <Typography.Text strong>{item.name}</Typography.Text>
             <div
               style={{
-                background: '#f0f0f0',
+                background: "#f0f0f0",
                 borderRadius: 8,
-                overflow: 'hidden',
+                overflow: "hidden",
                 height: 14,
                 marginTop: 6,
               }}
@@ -120,8 +126,8 @@ const AdminCard = () => {
               <div
                 style={{
                   width: `${(item.value / maxValue) * 100}%`,
-                  background: '#1890ff',
-                  height: '100%',
+                  background: "#1890ff",
+                  height: "100%",
                 }}
               />
             </div>
@@ -138,15 +144,26 @@ const AdminCard = () => {
         <Col xs={24} md={12}>
           <Card title="Filter theo khoảng thời gian" bordered={false}>
             <DatePicker.RangePicker
-              style={{ width: '100%' }}
-              onChange={(_, dateStrings) => setDateRange(dateStrings as [string, string] | null)}
+              style={{ width: "100%" }}
+              onChange={(_, dateStrings) =>
+                setDateRange(dateStrings as [string, string] | null)
+              }
             />
             {dateRange ? (
-              <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div
+                style={{
+                  marginTop: 12,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
                 <Typography.Text type="secondary">
                   Từ {dateRange[0]} đến {dateRange[1]}
                 </Typography.Text>
-                <Typography.Link onClick={() => setDateRange(null)}>Xóa</Typography.Link>
+                <Typography.Link onClick={() => setDateRange(null)}>
+                  Xóa
+                </Typography.Link>
               </div>
             ) : null}
           </Card>
@@ -155,21 +172,21 @@ const AdminCard = () => {
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} md={8}>
           <Card title="Total Users" bordered={false}>
-            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#1890ff' }}>
+            <div style={{ fontSize: 24, fontWeight: "bold", color: "#1890ff" }}>
               {orderStats.totalUsers}
             </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
           <Card title="Active Users" bordered={false}>
-            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#52c41a' }}>
+            <div style={{ fontSize: 24, fontWeight: "bold", color: "#52c41a" }}>
               {orderStats.activeUsers}
             </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
           <Card title="Inactive Users" bordered={false}>
-            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#ff4d4f' }}>
+            <div style={{ fontSize: 24, fontWeight: "bold", color: "#ff4d4f" }}>
               {orderStats.inactiveUsers}
             </div>
           </Card>
@@ -178,21 +195,21 @@ const AdminCard = () => {
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} md={8}>
           <Card title="Total Orders" bordered={false}>
-            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#722ed1' }}>
+            <div style={{ fontSize: 24, fontWeight: "bold", color: "#722ed1" }}>
               {orderStats.totalOrders}
             </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
           <Card title="Total Revenue" bordered={false}>
-            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#fa8c16' }}>
-              {orderStats.totalRevenue?.toLocaleString('vi-VN')} đ
+            <div style={{ fontSize: 24, fontWeight: "bold", color: "#fa8c16" }}>
+              {orderStats.totalRevenue?.toLocaleString("vi-VN")} đ
             </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
           <Card title="Total Products" bordered={false}>
-            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#722ed1' }}>
+            <div style={{ fontSize: 24, fontWeight: "bold", color: "#722ed1" }}>
               {orderStats.totalProducts}
             </div>
           </Card>
@@ -201,21 +218,21 @@ const AdminCard = () => {
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} md={8}>
           <Card title="Total Categories" bordered={false}>
-            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#722ed1' }}>
+            <div style={{ fontSize: 24, fontWeight: "bold", color: "#722ed1" }}>
               {orderStats.totalCategories}
             </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
           <Card title="Total Reviews" bordered={false}>
-            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#722ed1' }}>
+            <div style={{ fontSize: 24, fontWeight: "bold", color: "#722ed1" }}>
               {orderStats.totalReviews}
             </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
           <Card title="Total Payments" bordered={false}>
-            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#722ed1' }}>
+            <div style={{ fontSize: 24, fontWeight: "bold", color: "#722ed1" }}>
               {orderStats.totalPayments}
             </div>
           </Card>
@@ -224,7 +241,7 @@ const AdminCard = () => {
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} md={8}>
           <Card title="Total Carts" bordered={false}>
-            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#722ed1' }}>
+            <div style={{ fontSize: 24, fontWeight: "bold", color: "#722ed1" }}>
               {orderStats.totalCarts}
             </div>
           </Card>
@@ -234,12 +251,14 @@ const AdminCard = () => {
             {Object.keys(orderStats.orderStatuses).length === 0 ? (
               <Typography.Text>Chưa có đơn hàng.</Typography.Text>
             ) : (
-              Object.entries(orderStats.orderStatuses).map(([status, count]) => (
-                <div key={status} style={{ marginBottom: 8 }}>
-                  <Typography.Text strong>{status}:</Typography.Text>{' '}
-                  <Typography.Text>{count}</Typography.Text>
-                </div>
-              ))
+              Object.entries(orderStats.orderStatuses).map(
+                ([status, count]) => (
+                  <div key={status} style={{ marginBottom: 8 }}>
+                    <Typography.Text strong>{status}:</Typography.Text>{" "}
+                    <Typography.Text>{count}</Typography.Text>
+                  </div>
+                ),
+              )
             )}
           </Card>
         </Col>
@@ -248,12 +267,14 @@ const AdminCard = () => {
             {Object.keys(orderStats.paymentStatuses).length === 0 ? (
               <Typography.Text>Chưa có thanh toán.</Typography.Text>
             ) : (
-              Object.entries(orderStats.paymentStatuses).map(([status, count]) => (
-                <div key={status} style={{ marginBottom: 8 }}>
-                  <Typography.Text strong>{status}:</Typography.Text>{' '}
-                  <Typography.Text>{count}</Typography.Text>
-                </div>
-              ))
+              Object.entries(orderStats.paymentStatuses).map(
+                ([status, count]) => (
+                  <div key={status} style={{ marginBottom: 8 }}>
+                    <Typography.Text strong>{status}:</Typography.Text>{" "}
+                    <Typography.Text>{count}</Typography.Text>
+                  </div>
+                ),
+              )
             )}
           </Card>
         </Col>
@@ -261,12 +282,20 @@ const AdminCard = () => {
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col xs={24} md={12}>
           <Card title="Order Status Chart" bordered={false}>
-            {orderStatusChart.length ? renderBarChart(orderStatusChart) : <Typography.Text>Không có dữ liệu.</Typography.Text>}
+            {orderStatusChart.length ? (
+              renderBarChart(orderStatusChart)
+            ) : (
+              <Typography.Text>Không có dữ liệu.</Typography.Text>
+            )}
           </Card>
         </Col>
         <Col xs={24} md={12}>
           <Card title="Payment Status Chart" bordered={false}>
-            {paymentStatusChart.length ? renderBarChart(paymentStatusChart) : <Typography.Text>Không có dữ liệu.</Typography.Text>}
+            {paymentStatusChart.length ? (
+              renderBarChart(paymentStatusChart)
+            ) : (
+              <Typography.Text>Không có dữ liệu.</Typography.Text>
+            )}
           </Card>
         </Col>
       </Row>
@@ -278,7 +307,10 @@ const AdminCard = () => {
             <div key={item._id} style={{ marginBottom: 12 }}>
               <Typography.Text strong>{index + 1}. </Typography.Text>
               <Typography.Text>{item._id}</Typography.Text>
-              <Typography.Text type="secondary"> — {item.quantity} sản phẩm</Typography.Text>
+              <Typography.Text type="secondary">
+                {" "}
+                — {item.quantity} sản phẩm
+              </Typography.Text>
             </div>
           ))
         )}

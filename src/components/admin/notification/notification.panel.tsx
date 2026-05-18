@@ -57,13 +57,15 @@ const NotificationPanel = () => {
 
       if (lastOrderAt.current) {
         const newOrders = fetchedOrders.filter(
-          (item: IOrder) => item.createdAt && item.createdAt > lastOrderAt.current,
+          (item: IOrder) =>
+            item.createdAt && item.createdAt > lastOrderAt.current,
         );
         setNewOrdersCount(newOrders.length);
       }
       if (lastChatAt.current) {
         const newChats = fetchedChats.filter(
-          (item: IAiChat) => item.createdAt && item.createdAt > lastChatAt.current,
+          (item: IAiChat) =>
+            item.createdAt && item.createdAt > lastChatAt.current,
         );
         setNewChatsCount(newChats.length);
       }
@@ -97,20 +99,22 @@ const NotificationPanel = () => {
   }, [accessToken]);
 
   const orderNotifications = useMemo(
-    () => orders.map((order) => ({
-      title: `Đơn hàng mới: ${order._id}`,
-      description: `Giá trị ${order.totalPrice?.toLocaleString("vi-VN")} đ — Trạng thái ${order.orderStatus} / ${order.paymentStatus}`,
-      date: order.createdAt,
-    })),
+    () =>
+      orders.map((order) => ({
+        title: `Đơn hàng mới: ${order._id}`,
+        description: `Giá trị ${order.totalPrice?.toLocaleString("vi-VN")} đ — Trạng thái ${order.orderStatus} / ${order.paymentStatus}`,
+        date: order.createdAt,
+      })),
     [orders],
   );
 
   const chatNotifications = useMemo(
-    () => chats.map((chat) => ({
-      title: `${chat.sender === "user" ? "Người dùng" : "AI"}`,
-      description: chat.message,
-      date: chat.createdAt,
-    })),
+    () =>
+      chats.map((chat) => ({
+        title: `${chat.sender === "user" ? "Người dùng" : "AI"}`,
+        description: chat.message,
+        date: chat.createdAt,
+      })),
     [chats],
   );
 
@@ -128,7 +132,9 @@ const NotificationPanel = () => {
           </Badge>
           <Badge count={newChatsCount} size="small">
             <Card title="Chat AI mới" bordered>
-              <Typography.Text>Số tin nhắn chat mới: {newChatsCount}</Typography.Text>
+              <Typography.Text>
+                Số tin nhắn chat mới: {newChatsCount}
+              </Typography.Text>
             </Card>
           </Badge>
         </Space>
@@ -142,7 +148,9 @@ const NotificationPanel = () => {
                   title={item.title}
                   description={item.description}
                 />
-                <div>{item.date ? new Date(item.date).toLocaleString() : "-"}</div>
+                <div>
+                  {item.date ? new Date(item.date).toLocaleString() : "-"}
+                </div>
               </List.Item>
             )}
           />
@@ -157,7 +165,9 @@ const NotificationPanel = () => {
                   title={item.title}
                   description={item.description}
                 />
-                <div>{item.date ? new Date(item.date).toLocaleString() : "-"}</div>
+                <div>
+                  {item.date ? new Date(item.date).toLocaleString() : "-"}
+                </div>
               </List.Item>
             )}
           />

@@ -93,7 +93,8 @@ const CartManager = ({ data, accessToken }: IProps) => {
       {
         title: "Thành tiền",
         width: 180,
-        render: (_: any, record: ICartItem) => `${(record.price * record.quantity)?.toLocaleString("vi-VN")} đ`,
+        render: (_: any, record: ICartItem) =>
+          `${(record.price * record.quantity)?.toLocaleString("vi-VN")} đ`,
       },
       {
         title: "Hành động",
@@ -139,10 +140,19 @@ const CartManager = ({ data, accessToken }: IProps) => {
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20}}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 20,
+        }}
+      >
         <div>
           <Typography.Title level={3}>Quản lý Cart</Typography.Title>
-          <Typography.Text>Giỏ hàng hiện tại của admin/user đang đăng nhập</Typography.Text>
+          <Typography.Text>
+            Giỏ hàng hiện tại của admin/user đang đăng nhập
+          </Typography.Text>
         </div>
         <Button
           danger
@@ -185,7 +195,9 @@ const CartManager = ({ data, accessToken }: IProps) => {
         pagination={false}
       />
       <div style={{ marginTop: 18, textAlign: "right" }}>
-        <Typography.Title level={4}>Tổng: {cart.totalPrice?.toLocaleString("vi-VN")} đ</Typography.Title>
+        <Typography.Title level={4}>
+          Tổng: {cart.totalPrice?.toLocaleString("vi-VN")} đ
+        </Typography.Title>
       </div>
     </div>
   );
