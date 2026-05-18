@@ -1,15 +1,17 @@
 'use client'
 import { AdminContext } from '@/library/admin.context';
-import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import { MenuFoldOutlined, MenuUnfoldOutlined, HomeOutlined } from '@ant-design/icons';
 import { Button, Layout } from 'antd';
 import { useContext } from 'react';
-import { DownOutlined, SmileOutlined } from '@ant-design/icons';
+import { DownOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { Dropdown, Space } from 'antd';
 import { useSession } from "next-auth/react"
 import { signOut } from "next-auth/react"
+import { useRouter } from 'next/navigation';
 
 const AdminHeader = (props: any) => {
+    const router = useRouter();
     // const { data: session, status } = useSession();
     const { session } = props;
 
@@ -44,16 +46,26 @@ const AdminHeader = (props: any) => {
                     alignItems: "center"
                 }} >
 
-                <Button
-                    type="text"
-                    icon={collapseMenu ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-                    onClick={() => setCollapseMenu(!collapseMenu)}
-                    style={{
-                        fontSize: '16px',
-                        width: 64,
-                        height: 64,
-                    }}
-                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Button
+                        type="text"
+                        icon={collapseMenu ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                        onClick={() => setCollapseMenu(!collapseMenu)}
+                        style={{
+                            fontSize: '16px',
+                            width: 64,
+                            height: 64,
+                        }}
+                    />
+                    <Button
+                        type="default"
+                        icon={<HomeOutlined />}
+                        onClick={() => router.push("/")}
+                    >
+                        Guest
+                    </Button>
+                </div>
+
                 <Dropdown menu={{ items }} >
                     <a onClick={(e) => e.preventDefault()}
                         style={{ color: "unset", lineHeight: "0 !important", marginRight: 20 }}

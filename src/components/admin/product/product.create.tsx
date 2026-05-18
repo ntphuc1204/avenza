@@ -1,3 +1,5 @@
+"use client";
+
 import { handleCreateProductAction } from "@/utils/actions";
 import type { UploadFile } from "antd/es/upload/interface";
 import {
@@ -44,12 +46,32 @@ const ProductCreate = (props: IProps) => {
     setLoading(true);
 
     try {
-      const payload = {
-        ...values,
-        images: imageFiles,
-      };
+      const formData = new FormData();
 
-      const res = await handleCreateProductAction(payload);
+      formData.append("name", values.name);
+      formData.append("slug", values.slug || "");
+      formData.append("description", values.description || "");
+      formData.append("price", values.price);
+      formData.append("stock", values.stock);
+      formData.append("categoryId", values.categoryId);
+      formData.append("status", values.status);
+      formData.append("isFeatured", values.isFeatured || false);
+
+      imageFiles.forEach((file) => {
+        if (file.originFileObj) {
+          formData.append("images", file.originFileObj);
+        }
+      });
+
+      console.log("========== FORM DATA ==========");
+
+      for (const pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
+      }
+
+      const res = await handleCreateProductAction(formData);
+
+      console.log(res);
 
       if (res?.data) {
         handleCloseCreateModal();
@@ -64,6 +86,8 @@ const ProductCreate = (props: IProps) => {
         });
       }
     } catch (error: any) {
+      console.log(error);
+
       notification.error({
         message: "Lỗi tạo sản phẩm",
         description: error?.message || "Có lỗi xảy ra",
@@ -215,13 +239,34 @@ const ProductCreate = (props: IProps) => {
               <Upload
                 multiple
                 beforeUpload={(file) => {
-                  setImageFiles((prev) => [...prev, file]);
+                  console.log("========== UPLOAD FILE ==========");
+                  console.log(file);
+
+                  setImageFiles((prev) => {
+                    const updated = [...prev, file];
+
+                    console.log("========== UPDATED IMAGE FILES ==========");
+                    console.log(updated);
+
+                    return updated;
+                  });
+
                   return false;
                 }}
                 onRemove={(file) => {
-                  setImageFiles((prev) =>
-                    prev.filter((item) => item.uid !== file.uid),
-                  );
+                  console.log("========== REMOVE FILE ==========");
+                  console.log(file);
+
+                  setImageFiles((prev) => {
+                    const updated = prev.filter(
+                      (item) => item.uid !== file.uid,
+                    );
+
+                    console.log("========== AFTER REMOVE ==========");
+                    console.log(updated);
+
+                    return updated;
+                  });
                 }}
                 fileList={imageFiles as any}
               >

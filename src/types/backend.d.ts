@@ -26,7 +26,7 @@ declare global {
             pages: number;
             total: number;
         },
-        result: T[]
+        results: T[]
     }
 
     interface ILogin {
@@ -34,6 +34,7 @@ declare global {
             _id: string;
             name: string;
             email: string;
+            role?: string;
         }
         access_token: string;
     }

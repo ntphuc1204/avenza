@@ -192,13 +192,13 @@ export const handleUpdateProductAction = async (data: any) => {
 export const handleDeleteProductAction = async (id: any) => {
     const session = await auth();
     const res = await sendRequest<IBackendRes<any>>({
-        url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/product/${id}`,
+        url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/products/${id}`,
         method: "DELETE",
         headers: {
             Authorization: `Bearer ${session?.user?.access_token}`,
         },
     })
 
-    revalidateTag("list-users")
+    revalidateTag("list-products")
     return res;
 }

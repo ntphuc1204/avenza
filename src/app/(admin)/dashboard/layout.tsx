@@ -5,6 +5,7 @@ import AdminHeader from "@/components/layout/admin.header";
 import AdminSideBar from "@/components/layout/admin.sidebar";
 import { AdminContextProvider } from "@/library/admin.context";
 import "../css/admin.css";
+import "@/styles/table.css";
 
 const AdminLayout = async ({
   children,

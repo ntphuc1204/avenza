@@ -18,6 +18,7 @@ import {
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import GuestLayout from "@/components/layout/guest.layout";
+import ProductCard from "@/components/guest/product.card";
 import ProductReviews from "@/components/guest/product.reviews";
 import { sendRequest } from "@/utils/api";
 import Link from "next/link";
@@ -113,7 +114,7 @@ const ProductDetailPage = () => {
       ) : (
         <Row gutter={[24, 24]}>
           <Col xs={24} md={12}>
-            <Card style={{ borderRadius: 20 }} bodyStyle={{ padding: 0 }}>
+            <Card style={{ borderRadius: 20 }} styles={{ body: { padding: 0 } }}>
               <div
                 style={{
                   background: "#fafafa",

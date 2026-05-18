@@ -76,11 +76,19 @@ const ProductCard = ({ product, onAddToCart }: IProductCardProps) => {
         </Link>
       }
       style={{ borderRadius: 16 }}
-      bodyStyle={{ padding: 16 }}
+      styles={{ body: { padding: 16 } }}
     >
       <Space direction="vertical" size={8} style={{ width: "100%" }}>
         <Link href={`/product/${product._id}`}>
-          <Title level={5} style={{ margin: 0 }}>
+          <Title
+            level={5}
+            style={{
+              margin: 0,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
             {product.name}
           </Title>
         </Link>
