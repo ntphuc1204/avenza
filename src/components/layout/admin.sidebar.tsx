@@ -3,9 +3,13 @@ import Layout from "antd/es/layout";
 import Menu from "antd/es/menu";
 import {
   AppstoreOutlined,
-  MailOutlined,
-  SettingOutlined,
   TeamOutlined,
+  ShopOutlined,
+  ProfileOutlined,
+  CreditCardOutlined,
+  CommentOutlined,
+  ShoppingCartOutlined,
+  RobotOutlined,
 } from "@ant-design/icons";
 import React, { useContext } from "react";
 import { AdminContext } from "@/library/admin.context";
@@ -25,74 +29,53 @@ const AdminSideBar = () => {
       children: [
         {
           key: "dashboard",
-          label: <Link href={"/dashboard"}>Dashboard</Link>,
+          label: <Link href="/dashboard">Dashboard</Link>,
           icon: <AppstoreOutlined />,
         },
         {
           key: "users",
-          label: <Link href={"/dashboard/user"}>Manage Users</Link>,
+          label: <Link href="/dashboard/user">Manage Users</Link>,
           icon: <TeamOutlined />,
         },
         {
           key: "product",
-          label: <Link href={"/dashboard/product"}>Manage product</Link>,
-          icon: <TeamOutlined />,
+          label: <Link href="/dashboard/product">Manage Products</Link>,
+          icon: <ShopOutlined />,
         },
         {
-          key: "product",
-          label: <Link href={"/dashboard/product"}>Manage product</Link>,
-          icon: <MailOutlined />,
-          children: [
-            {
-              key: "g1",
-              label: "Item 1",
-              type: "group",
-              children: [
-                { key: "1", label: "Option 1" },
-                { key: "2", label: "Option 2" },
-              ],
-            },
-            {
-              key: "g2",
-              label: "Item 2",
-              type: "group",
-              children: [
-                { key: "3", label: "Option 3" },
-                { key: "4", label: "Option 4" },
-              ],
-            },
-          ],
+          key: "categories",
+          label: <Link href="/dashboard/categories">Manage Categories</Link>,
+          icon: <ProfileOutlined />,
         },
         {
-          key: "sub2",
-          label: "Navigation Two",
-          icon: <AppstoreOutlined />,
-          children: [
-            { key: "5", label: "Option 5" },
-            { key: "6", label: "Option 6" },
-            {
-              key: "sub3",
-              label: "Submenu",
-              children: [
-                { key: "7", label: "Option 7" },
-                { key: "8", label: "Option 8" },
-              ],
-            },
-          ],
+          key: "orders",
+          label: <Link href="/dashboard/orders">Manage Orders</Link>,
+          icon: <ShopOutlined />,
         },
         {
-          type: "divider",
+          key: "payments",
+          label: <Link href="/dashboard/payments">Manage Payments</Link>,
+          icon: <CreditCardOutlined />,
         },
         {
-          key: "sub4",
-          label: "Navigation Three",
-          icon: <SettingOutlined />,
-          children: [
-            { key: "9", label: "Option 9" },
-            { key: "10", label: "Option 10" },
-            { key: "11", label: "Option 11" },
-            { key: "12", label: "Option 12" },
-          ],
+          key: "reviews",
+          label: <Link href="/dashboard/reviews">Manage Reviews</Link>,
+          icon: <CommentOutlined />,
+        },
+        {
+          key: "cart",
+          label: <Link href="/dashboard/cart">Manage Cart</Link>,
+          icon: <ShoppingCartOutlined />,
+        },
+        {
+          key: "notifications",
+          label: <Link href="/dashboard/notifications">Notifications</Link>,
+          icon: <ProfileOutlined />,
+        },
+        {
+          key: "ai",
+          label: <Link href="/dashboard/ai">AI Console</Link>,
+          icon: <RobotOutlined />,
         },
       ],
     },
