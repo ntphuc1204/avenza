@@ -62,7 +62,7 @@ const uploadImage = async (image: File) => {
     console.log("UPLOAD FILE:", image);
 
     const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/users/upload-image`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/products/upload-image`,
         {
             method: 'POST',
             headers: {
