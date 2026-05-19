@@ -35,7 +35,10 @@ const ProductReviews = ({ productId }: IProductReviewsProps) => {
     });
     setLoading(false);
     if (res?.data) {
-      setReviews(res.data);
+      const reviewsData = Array.isArray(res.data)
+        ? res.data
+        : res.data.results || [];
+      setReviews(reviewsData);
     }
   };
 

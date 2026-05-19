@@ -1,7 +1,8 @@
 "use client";
 
-import { Badge, Card, Divider, List, Space, Spin, Typography } from "antd";
+import { Badge, Button, Card, Divider, List, Space, Spin, Typography } from "antd";
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { sendRequest } from "@/utils/api";
 
@@ -12,25 +13,17 @@ interface IOrder {
   orderStatus?: string;
   paymentStatus?: string;
   createdAt?: string;
-}
-
-interface IAiChat {
-  _id: string;
-  userId: string;
-  sender: string;
-  message: string;
-  createdAt?: string;
+  updatedAt?: string;
 }
 
 const NotificationPanel = () => {
   const { data: session } = useSession();
   const [orders, setOrders] = useState<IOrder[]>([]);
-  const [chats, setChats] = useState<IAiChat[]>([]);
   const [loading, setLoading] = useState(true);
   const [newOrdersCount, setNewOrdersCount] = useState(0);
-  const [newChatsCount, setNewChatsCount] = useState(0);
+  const [newPaidOrdersCount, setNewPaidOrdersCount] = useState(0);
   const lastOrderAt = useRef<string | null>(null);
-  const lastChatAt = useRef<string | null>(null);
+  const lastPaidAt = useRef<string | null>(null);
 
   const accessToken = session?.user?.access_token;
 
@@ -38,22 +31,14 @@ const NotificationPanel = () => {
     if (!accessToken) return;
     setLoading(true);
     try {
-      const [orderRes, chatRes] = await Promise.all([
-        sendRequest<IBackendRes<any>>({
-          url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/orders`,
-          method: "GET",
-          queryParams: { current: 1, pageSize: 10 },
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }),
-        sendRequest<IBackendRes<any>>({
-          url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/ai/history`,
-          method: "GET",
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }),
-      ]);
+      const orderRes = await sendRequest<IBackendRes<any>>({
+        url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/orders`,
+        method: "GET",
+        queryParams: { current: 1, pageSize: 20 },
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
 
       const fetchedOrders = orderRes?.data?.results ?? [];
-      const fetchedChats = chatRes?.data ?? [];
 
       if (lastOrderAt.current) {
         const newOrders = fetchedOrders.filter(
@@ -62,23 +47,35 @@ const NotificationPanel = () => {
         );
         setNewOrdersCount(newOrders.length);
       }
-      if (lastChatAt.current) {
-        const newChats = fetchedChats.filter(
-          (item: IAiChat) =>
-            item.createdAt && item.createdAt > lastChatAt.current,
+
+      if (lastPaidAt.current) {
+        const newPaidOrders = fetchedOrders.filter(
+          (item: IOrder) =>
+            item.paymentStatus === "SUCCESS" &&
+            item.updatedAt &&
+            item.updatedAt > lastPaidAt.current,
         );
-        setNewChatsCount(newChats.length);
+        setNewPaidOrdersCount(newPaidOrders.length);
       }
 
-      if (fetchedOrders.length > 0 && fetchedOrders[0]?.createdAt) {
-        lastOrderAt.current = fetchedOrders[0].createdAt;
+      const latestOrder = fetchedOrders.find(
+        (item: IOrder) => item.createdAt,
+      );
+      if (latestOrder?.createdAt) {
+        lastOrderAt.current = latestOrder.createdAt;
       }
-      if (fetchedChats.length > 0 && fetchedChats[0]?.createdAt) {
-        lastChatAt.current = fetchedChats[0].createdAt;
+
+      const latestPaidOrder = fetchedOrders
+        .filter((item: IOrder) => item.paymentStatus === "SUCCESS")
+        .sort((a, b) =>
+          new Date(b.updatedAt || "").getTime() -
+          new Date(a.updatedAt || "").getTime(),
+        )[0];
+      if (latestPaidOrder?.updatedAt) {
+        lastPaidAt.current = latestPaidOrder.updatedAt;
       }
 
       setOrders(fetchedOrders);
-      setChats(fetchedChats.slice(0, 20));
     } catch (error) {
       console.error("Notification fetch error", error);
     } finally {
@@ -100,22 +97,20 @@ const NotificationPanel = () => {
 
   const orderNotifications = useMemo(
     () =>
-      orders.map((order) => ({
-        title: `Đơn hàng mới: ${order._id}`,
-        description: `Giá trị ${order.totalPrice?.toLocaleString("vi-VN")} đ — Trạng thái ${order.orderStatus} / ${order.paymentStatus}`,
-        date: order.createdAt,
-      })),
+      orders
+        .filter(
+          (order) =>
+            order.orderStatus === "PENDING" || order.paymentStatus === "SUCCESS",
+        )
+        .map((order) => ({
+          title:
+            order.paymentStatus === "SUCCESS"
+              ? `Đơn hàng đã thanh toán: ${order._id}`
+              : `Đơn hàng mới: ${order._id}`,
+          description: `Giá trị ${order.totalPrice?.toLocaleString("vi-VN")} đ — Trạng thái ${order.orderStatus} / ${order.paymentStatus}`,
+          date: order.paymentStatus === "SUCCESS" ? order.updatedAt : order.createdAt,
+        })),
     [orders],
-  );
-
-  const chatNotifications = useMemo(
-    () =>
-      chats.map((chat) => ({
-        title: `${chat.sender === "user" ? "Người dùng" : "AI"}`,
-        description: chat.message,
-        date: chat.createdAt,
-      })),
-    [chats],
   );
 
   return (
@@ -130,35 +125,26 @@ const NotificationPanel = () => {
               </Typography.Text>
             </Card>
           </Badge>
-          <Badge count={newChatsCount} size="small">
-            <Card title="Chat AI mới" bordered>
+          <Badge count={newPaidOrdersCount} size="small">
+            <Card title="Đã thanh toán" bordered>
               <Typography.Text>
-                Số tin nhắn chat mới: {newChatsCount}
+                Số đơn hàng thanh toán mới: {newPaidOrdersCount}
               </Typography.Text>
             </Card>
           </Badge>
         </Space>
 
-        <Card title="Danh sách đơn hàng gần nhất" bordered>
+        <Card
+          title="Danh sách đơn hàng mới / đã thanh toán"
+          extra={
+            <Link href="/dashboard/orders">
+              <Button type="link">Xem quản lý đơn hàng</Button>
+            </Link>
+          }
+          bordered
+        >
           <List
             dataSource={orderNotifications}
-            renderItem={(item) => (
-              <List.Item>
-                <List.Item.Meta
-                  title={item.title}
-                  description={item.description}
-                />
-                <div>
-                  {item.date ? new Date(item.date).toLocaleString() : "-"}
-                </div>
-              </List.Item>
-            )}
-          />
-        </Card>
-
-        <Card title="Lịch sử chat AI" bordered>
-          <List
-            dataSource={chatNotifications}
             renderItem={(item) => (
               <List.Item>
                 <List.Item.Meta

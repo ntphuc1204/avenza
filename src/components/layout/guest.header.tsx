@@ -9,11 +9,12 @@ import {
   LogoutOutlined,
   MenuOutlined,
 } from "@ant-design/icons";
-import { Button, Drawer, Input, Layout, Space, Typography, Grid } from "antd";
+import { Badge, Button, Drawer, Input, Layout, Space, Typography, Grid } from "antd";
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { sendRequest } from "@/utils/api";
 
 const { Header } = Layout;
 const { Text } = Typography;
@@ -29,12 +30,58 @@ const GuestHeader = () => {
   const screens = useBreakpoint();
 
   const [search, setSearch] = useState("");
-
+  const [notificationCount, setNotificationCount] = useState(0);
   const [openDrawer, setOpenDrawer] = useState(false);
+
+  const NOTIFICATIONS_LAST_VIEWED_KEY = "notificationsLastViewedAt";
+
+  const getLastViewedAt = () => {
+    if (typeof window === "undefined") return 0;
+    const saved = window.localStorage.getItem(NOTIFICATIONS_LAST_VIEWED_KEY);
+    return saved ? Number(saved) : 0;
+  };
 
   useEffect(() => {
     setSearch(searchParams?.get("search") ?? "");
   }, [searchParams]);
+
+  useEffect(() => {
+    const loadNotificationCount = async () => {
+      if (!session?.user?.access_token) {
+        setNotificationCount(0);
+        return;
+      }
+
+      const lastViewedAt = getLastViewedAt();
+
+      const res = await sendRequest<IBackendRes<any>>({
+        url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/orders`,
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${session.user.access_token}`,
+        },
+        queryParams: { current: 1, pageSize: 20 },
+      });
+
+      if (res?.data?.results) {
+        const count = res.data.results.filter((order: any) => {
+          const updatedAt = new Date(order.updatedAt || order.createdAt).getTime();
+          return updatedAt > lastViewedAt;
+        }).length;
+        setNotificationCount(count);
+      }
+    };
+
+    const handleNotificationsRead = () => {
+      loadNotificationCount();
+    };
+
+    loadNotificationCount();
+    window.addEventListener("notificationsRead", handleNotificationsRead);
+    return () => {
+      window.removeEventListener("notificationsRead", handleNotificationsRead);
+    };
+  }, [session]);
 
   const onSearch = (value: string) => {
     const path = value ? `/?search=${encodeURIComponent(value)}` : "/";
@@ -72,6 +119,18 @@ const GuestHeader = () => {
         >
           Đơn hàng
         </Button>
+      </Link>
+
+      <Link href="/notifications">
+        <Badge count={notificationCount} size="small" offset={[6, -4]}>
+          <Button
+            type="text"
+            icon={<AppstoreOutlined />}
+            style={{ width: screens.md ? "auto" : "100%" }}
+          >
+            Thông báo
+          </Button>
+        </Badge>
       </Link>
 
       {session?.user && (

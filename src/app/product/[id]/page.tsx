@@ -35,36 +35,62 @@ const ProductDetailPage = () => {
   const [product, setProduct] = useState<any>(null);
   const [related, setRelated] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
 
   const loadProduct = async () => {
     setLoading(true);
-    const res = await sendRequest<IBackendRes<any>>({
-      url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/products/${productId}`,
-      method: "GET",
-    });
-    setLoading(false);
-    if (res?.data) {
-      setProduct(res.data);
+    setError(null);
+
+    try {
+      const res = await sendRequest<IBackendRes<any>>({
+        url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/products/${productId}`,
+        method: "GET",
+      });
+
+      if (res?.data) {
+        setProduct(res.data);
+      } else {
+        setProduct(null);
+        setError(res?.message || "Không tìm thấy sản phẩm");
+      }
+    } catch (err) {
+      setProduct(null);
+      setError("Lỗi khi tải sản phẩm");
+      console.error("Load product error", err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const loadRelated = async () => {
-    const res = await sendRequest<IBackendRes<any>>({
-      url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/products/related/${productId}`,
-      method: "GET",
-    });
-    if (res?.data) {
-      setRelated(res.data);
+    try {
+      const res = await sendRequest<IBackendRes<any>>({
+        url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/products/related/${productId}`,
+        method: "GET",
+      });
+      if (res?.data) {
+        setRelated(res.data);
+      } else {
+        setRelated([]);
+      }
+    } catch (err) {
+      console.error("Load related products error", err);
+      setRelated([]);
     }
   };
 
   useEffect(() => {
     if (productId) {
       loadProduct();
-      loadRelated();
     }
   }, [productId]);
+
+  useEffect(() => {
+    if (product) {
+      loadRelated();
+    }
+  }, [product]);
 
   const addToCart = async () => {
     if (!session?.user?.access_token) {
@@ -111,6 +137,8 @@ const ProductDetailPage = () => {
 
       {loading ? (
         <Skeleton active paragraph={{ rows: 10 }} />
+      ) : error || !product ? (
+        <Empty description={error || "Sản phẩm không tồn tại"} />
       ) : (
         <Row gutter={[24, 24]}>
           <Col xs={24} md={12}>

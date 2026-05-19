@@ -1,20 +1,21 @@
 "use client";
 
 import {
+  Avatar,
   Button,
   Card,
   Col,
   Divider,
   Empty,
   Input,
-  List,
   Row,
   Space,
   Tag,
   Typography,
   notification,
 } from "antd";
-import { useEffect, useState } from "react";
+import { SendOutlined } from "@ant-design/icons";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import GuestLayout from "@/components/layout/guest.layout";
@@ -27,10 +28,10 @@ const AIPage = () => {
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [history, setHistory] = useState<any[]>([]);
-  const [answer, setAnswer] = useState<string>("");
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [recommendLoading, setRecommendLoading] = useState(false);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const loadHistory = async () => {
     if (!session?.user?.access_token) return;
@@ -70,7 +71,6 @@ const AIPage = () => {
     });
     setLoading(false);
     if (res?.data?.message) {
-      setAnswer(res.data.message);
       setHistory((prev) => [
         ...prev,
         { sender: "user", message },
@@ -81,6 +81,13 @@ const AIPage = () => {
       notification.error({ message: res?.message || "AI trả lời thất bại" });
     }
   };
+
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
+    }
+  }, [history]);
 
   const recommendProduct = async () => {
     if (!message.trim()) {
@@ -143,41 +150,106 @@ const AIPage = () => {
         <Col xs={24} lg={14}>
           <Card style={{ borderRadius: 20 }}>
             <Title level={5}>Chat với AI</Title>
-            <Input.TextArea
-              rows={4}
-              value={message}
-              onChange={(event) => setMessage(event.target.value)}
-              placeholder="Hỏi AI về sản phẩm, hướng dẫn, gợi ý..."
-            />
-            <Space style={{ marginTop: 16 }}>
-              <Button type="primary" onClick={sendMessage} loading={loading}>
-                Gửi câu hỏi
-              </Button>
-              <Button onClick={recommendProduct} loading={recommendLoading}>
-                Gợi ý sản phẩm
-              </Button>
-            </Space>
 
-            {answer ? (
-              <div style={{ marginTop: 24 }}>
-                <Title level={5}>AI trả lời</Title>
-                <Text>{answer}</Text>
-              </div>
-            ) : null}
-          </Card>
-
-          <Card style={{ borderRadius: 20, marginTop: 24 }}>
-            <Title level={5}>Lịch sử hội thoại</Title>
-            <List
-              dataSource={history}
-              locale={{ emptyText: "Chưa có lịch sử hội thoại" }}
-              renderItem={(item) => (
-                <List.Item>
-                  <Text strong>{item.sender === "ai" ? "AI:" : "Bạn:"}</Text>{" "}
-                  {item.message}
-                </List.Item>
+            <div
+              ref={chatContainerRef}
+              style={{
+                minHeight: 420,
+                maxHeight: 520,
+                overflowY: "auto",
+                padding: 24,
+                background: "#f0f2f5",
+              }}
+            >
+              {history.length ? (
+                history.map((item, index) => {
+                  const isUser = item.sender === "user";
+                  return (
+                    <div
+                      key={`${item.sender}-${index}`}
+                      style={{
+                        display: "flex",
+                        justifyContent: isUser ? "flex-end" : "flex-start",
+                        marginBottom: 16,
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "flex-end",
+                          gap: 10,
+                          maxWidth: "85%",
+                          flexDirection: isUser ? "row-reverse" : "row",
+                        }}
+                      >
+                        <Avatar
+                          style={{
+                            backgroundColor: isUser ? "#1890ff" : "#ffffff",
+                            color: isUser ? "#ffffff" : "#000000",
+                            border: isUser ? "none" : "1px solid #d9d9d9",
+                          }}
+                        >
+                          {isUser ? "U" : "AI"}
+                        </Avatar>
+                        <div
+                          style={{
+                            background: isUser ? "#0084ff" : "#ffffff",
+                            color: isUser ? "#ffffff" : "#000000",
+                            padding: "14px 18px",
+                            borderRadius: 20,
+                            borderTopRightRadius: isUser ? 0 : 20,
+                            borderTopLeftRadius: isUser ? 20 : 0,
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word",
+                          }}
+                        >
+                          <Text
+                            style={{ color: isUser ? "#ffffff" : "#000000" }}
+                          >
+                            {item.message}
+                          </Text>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div style={{ textAlign: "center", color: "#8c8c8c" }}>
+                  Chưa có tin nhắn nào. Hãy bắt đầu trò chuyện với AI.
+                </div>
               )}
-            />
+            </div>
+
+            <div style={{ padding: 20, background: "#ffffff" }}>
+              <Input.TextArea
+                rows={4}
+                value={message}
+                onChange={(event) => setMessage(event.target.value)}
+                placeholder="Nhập câu hỏi hoặc yêu cầu của bạn..."
+              />
+              <Row
+                justify="space-between"
+                align="middle"
+                style={{ marginTop: 16 }}
+              >
+                <Col>
+                  <Button onClick={recommendProduct} loading={recommendLoading}>
+                    Gợi ý sản phẩm
+                  </Button>
+                </Col>
+                <Col>
+                  <Button
+                    type="primary"
+                    icon={<SendOutlined />}
+                    onClick={sendMessage}
+                    loading={loading}
+                  >
+                    Gửi
+                  </Button>
+                </Col>
+              </Row>
+            </div>
           </Card>
         </Col>
 

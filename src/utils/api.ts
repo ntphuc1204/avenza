@@ -1,5 +1,12 @@
 import queryString from 'query-string';
 
+const normalizeBackendUrl = (inputUrl: string) => {
+    if (/^https?:\/\//i.test(inputUrl) || inputUrl.startsWith('/')) {
+        return inputUrl;
+    }
+    return `http://${inputUrl}`;
+};
+
 export const sendRequest = async <T>(props: IRequest) => { //type
     let {
         url,
@@ -11,6 +18,8 @@ export const sendRequest = async <T>(props: IRequest) => { //type
         nextOption = {}
     } = props;
 
+    url = normalizeBackendUrl(url);
+
     const options: any = {
         method: method,
         // by default setting the content-type to be json type
@@ -20,23 +29,43 @@ export const sendRequest = async <T>(props: IRequest) => { //type
     };
     if (useCredentials) options.credentials = "include";
 
-    if (queryParams) {
+    if (queryParams && Object.keys(queryParams).length) {
         url = `${url}?${queryString.stringify(queryParams)}`;
     }
 
-    return fetch(url, options).then(res => {
+    try {
+        const res = await fetch(url, options);
+        const json = await res.json().catch(() => ({}));
         if (res.ok) {
-            return res.json() as T; //generic
-        } else {
-            return res.json().then(function (json) {
-                // to be able to access error status when you catch the error 
-                return {
-                    statusCode: res.status,
-                    message: json?.message ?? "",
-                    error: json?.error ?? ""
-                } as T;
-            });
+            return json as T;
         }
+
+        return {
+            statusCode: res.status,
+            message: json?.message ?? json?.error ?? "Unexpected request error",
+            error: json?.error ?? json,
+        } as T;
+    } catch (error) {
+        console.error('Request failed', url, error);
+        return {
+            statusCode: 'FETCH_ERROR',
+            message: 'Không thể kết nối đến server',
+            error,
+        } as any;
+    }
+};
+
+export const getAccount = async <T>(options?: {
+    queryParams?: any;
+    headers?: any;
+    useCredentials?: boolean;
+}) => {
+    return sendRequest<T>({
+        url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/auth/account`,
+        method: 'GET',
+        headers: options?.headers ?? {},
+        queryParams: options?.queryParams ?? {},
+        useCredentials: options?.useCredentials ?? false,
     });
 };
 

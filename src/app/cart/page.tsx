@@ -20,7 +20,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import GuestLayout from "@/components/layout/guest.layout";
-import { sendRequest } from "@/utils/api";
+import { getAccount, sendRequest } from "@/utils/api";
 
 const { Title, Text } = Typography;
 
@@ -30,6 +30,13 @@ const CartPage = () => {
   const router = useRouter();
 
   const [form] = Form.useForm();
+
+  const [initialValues, setInitialValues] = useState({
+    recipientName: "",
+    phone: "",
+    address: "",
+    paymentMethod: "COD",
+  });
 
   const [cart, setCart] = useState<any>(null);
 
@@ -44,9 +51,7 @@ const CartPage = () => {
   const loadProfile = async () => {
     if (!session?.user?.access_token) return;
 
-    const res = await sendRequest<IBackendRes<any>>({
-      url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/auth/account`,
-      method: "GET",
+    const res = await getAccount<IBackendRes<any>>({
       headers: {
         Authorization: `Bearer ${session.user.access_token}`,
       },
@@ -57,12 +62,15 @@ const CartPage = () => {
     if (profileData) {
       setUserProfile(profileData);
 
-      form.setFieldsValue({
+      const profileValues = {
         recipientName: profileData.name || "",
         phone: profileData.phone || "",
         address: profileData.address || "",
         paymentMethod: "COD",
-      });
+      };
+
+      setInitialValues(profileValues);
+      form.setFieldsValue(profileValues);
     }
   };
 
@@ -345,6 +353,43 @@ const CartPage = () => {
 
               <Divider />
 
+              {userProfile && (
+                <div
+                  style={{
+                    marginBottom: 16,
+                    padding: 16,
+                    borderRadius: 16,
+                    background: "#f5f7fa",
+                    border: "1px solid #e6f7ff",
+                  }}
+                >
+                  <Title level={5} style={{ marginBottom: 12 }}>
+                    Thông tin người nhận
+                  </Title>
+                  <div style={{ marginBottom: 8 }}>
+                    <Text strong>Họ và tên: </Text>
+                    <Text>{userProfile.name || "-"}</Text>
+                  </div>
+                  <div style={{ marginBottom: 8 }}>
+                    <Text strong>Số điện thoại: </Text>
+                    <Text>{userProfile.phone || "-"}</Text>
+                  </div>
+                  <div style={{ marginBottom: 8 }}>
+                    <Text strong>Địa chỉ: </Text>
+                    <Text>{userProfile.address || "-"}</Text>
+                  </div>
+                  {userProfile.email ? (
+                    <div style={{ marginBottom: 8 }}>
+                      <Text strong>Email: </Text>
+                      <Text>{userProfile.email}</Text>
+                    </div>
+                  ) : null}
+                  <Button type="link" onClick={() => router.push("/profile")}>
+                    Cập nhật hồ sơ
+                  </Button>
+                </div>
+              )}
+
               {isMissingProfile && (
                 <div
                   style={{
@@ -368,7 +413,12 @@ const CartPage = () => {
                 </div>
               )}
 
-              <Form form={form} layout="vertical" onFinish={onFinish}>
+              <Form
+                form={form}
+                layout="vertical"
+                onFinish={onFinish}
+                initialValues={initialValues}
+              >
                 <Form.Item
                   name="recipientName"
                   label="Tên người nhận"

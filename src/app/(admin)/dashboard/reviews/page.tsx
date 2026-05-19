@@ -7,12 +7,25 @@ interface IProps {
   searchParams: { [key: string]: string | string[] | undefined };
 }
 
+const parseNumberParam = (value: string | string[] | undefined, fallback: number) => {
+  if (!value) return fallback;
+  const raw = Array.isArray(value) ? value[0] : value;
+  const parsed = Number(raw);
+  return Number.isNaN(parsed) ? fallback : parsed;
+};
+
 const ManageReviewPage = async (props: IProps) => {
+  const current = parseNumberParam(props?.searchParams?.current, 1);
+  const pageSize = parseNumberParam(props?.searchParams?.pageSize, 20);
   const session = await auth();
 
   const res = await sendRequest<IBackendRes<any>>({
     url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/reviews`,
     method: "GET",
+    queryParams: {
+      current,
+      pageSize,
+    },
     headers: {
       Authorization: `Bearer ${session?.user?.access_token}`,
     },
