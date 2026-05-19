@@ -1,6 +1,6 @@
 "use client";
 
-import { message, Pagination, Select, Tag, Button } from "antd";
+import { message, Pagination, Select, Tag, Button, Modal } from "antd";
 
 import { useState } from "react";
 
@@ -41,6 +41,14 @@ interface IOrder {
   paymentStatus?: string;
 
   createdAt?: string;
+
+  cancelStatus?: string;
+
+  cancelReason?: string;
+
+  cancelMessage?: string;
+
+  cancelRequestedAt?: string;
 }
 
 interface IMeta {
@@ -86,7 +94,6 @@ const OrderTable = ({ data, accessToken }: IProps) => {
   const handleUpdateStatus = async (orderId: string, status: string) => {
     if (!accessToken) {
       message.error("Không tìm thấy quyền truy cập");
-
       return;
     }
 
@@ -95,7 +102,6 @@ const OrderTable = ({ data, accessToken }: IProps) => {
     try {
       const res = await sendRequest<IBackendRes<any>>({
         url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/orders/${orderId}/status`,
-
         method: "PUT",
 
         headers: {
@@ -103,14 +109,12 @@ const OrderTable = ({ data, accessToken }: IProps) => {
         },
 
         body: {
-          _id: orderId,
           status,
         },
       });
 
       if (res?.data) {
         message.success("Cập nhật trạng thái thành công");
-
         router.refresh();
       } else {
         message.error(res?.message || "Cập nhật thất bại");
@@ -122,15 +126,55 @@ const OrderTable = ({ data, accessToken }: IProps) => {
     }
   };
 
+  const handleApproveCancel = async (orderId: string) => {
+    Modal.confirm({
+      title: "Xác nhận hủy đơn",
+      content: "Bạn có chắc muốn xác nhận hủy đơn hàng này?",
+
+      okText: "Xác nhận",
+      cancelText: "Đóng",
+
+      onOk: async () => {
+        if (!accessToken) {
+          message.error("Không tìm thấy quyền truy cập");
+
+          return;
+        }
+
+        setUpdatingId(orderId);
+
+        try {
+          const res = await sendRequest<IBackendRes<any>>({
+            url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/orders/${orderId}/approve-cancel`,
+
+            method: "PUT",
+
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          });
+
+          if (res?.data) {
+            message.success("Đã xác nhận hủy đơn hàng");
+
+            router.refresh();
+          } else {
+            message.error(res?.message || "Không thể xác nhận hủy");
+          }
+        } catch (error) {
+          message.error("Lỗi khi xác nhận hủy");
+        } finally {
+          setUpdatingId(null);
+        }
+      },
+    });
+  };
+
   return (
     <div className="page-wrapper">
-      {/* HEADER */}
-
       <div className="page-header">
         <h2 className="page-title">Quản lý đơn hàng</h2>
       </div>
-
-      {/* TABLE */}
 
       <div className="table-scroll">
         <table className="data-table">
@@ -152,6 +196,8 @@ const OrderTable = ({ data, accessToken }: IProps) => {
 
               <th>Sản phẩm</th>
 
+              <th>Yêu cầu hủy</th>
+
               <th className="sticky-column">Hành động</th>
             </tr>
           </thead>
@@ -163,13 +209,9 @@ const OrderTable = ({ data, accessToken }: IProps) => {
               return (
                 <>
                   <tr key={item._id}>
-                    {/* MÃ ĐƠN */}
-
                     <td>
                       <div className="table-subtext">{item._id}</div>
                     </td>
-
-                    {/* KHÁCH HÀNG */}
 
                     <td>
                       {typeof item.userId === "string"
@@ -177,31 +219,41 @@ const OrderTable = ({ data, accessToken }: IProps) => {
                         : item.userId?.email || item.userId?._id || "-"}
                     </td>
 
-                    {/* TỔNG TIỀN */}
-
                     <td>
                       <strong>
                         {item.totalPrice?.toLocaleString("vi-VN")} đ
                       </strong>
                     </td>
 
-                    {/* TRẠNG THÁI ĐƠN */}
-
                     <td>
-                      <Tag
-                        color={
-                          item.orderStatus === "DELIVERED"
-                            ? "green"
-                            : item.orderStatus === "CANCELLED"
-                              ? "red"
-                              : "orange"
-                        }
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 8,
+                        }}
                       >
-                        {item.orderStatus}
-                      </Tag>
-                    </td>
+                        <Tag
+                          color={
+                            item.orderStatus === "DELIVERED"
+                              ? "green"
+                              : item.orderStatus === "CANCELLED"
+                                ? "red"
+                                : "orange"
+                          }
+                        >
+                          {item.orderStatus}
+                        </Tag>
 
-                    {/* THANH TOÁN */}
+                        {item.cancelStatus === "REQUESTED" && (
+                          <Tag color="volcano">Yêu cầu hủy</Tag>
+                        )}
+
+                        {item.cancelStatus === "APPROVED" && (
+                          <Tag color="red">Đã duyệt hủy</Tag>
+                        )}
+                      </div>
+                    </td>
 
                     <td>
                       <Tag
@@ -217,11 +269,7 @@ const OrderTable = ({ data, accessToken }: IProps) => {
                       </Tag>
                     </td>
 
-                    {/* PAYMENT */}
-
                     <td>{item.paymentMethod || "-"}</td>
-
-                    {/* SHIPPING ADDRESS */}
 
                     <td>
                       <div className="table-subtext">
@@ -247,8 +295,6 @@ const OrderTable = ({ data, accessToken }: IProps) => {
                       </div>
                     </td>
 
-                    {/* PRODUCTS */}
-
                     <td>
                       <Button
                         size="small"
@@ -266,14 +312,57 @@ const OrderTable = ({ data, accessToken }: IProps) => {
                       </Button>
                     </td>
 
-                    {/* ACTION */}
+                    <td>
+                      {item.cancelStatus === "REQUESTED" ? (
+                        <div
+                          style={{
+                            minWidth: 220,
+                          }}
+                        >
+                          <div>
+                            <strong>Lý do:</strong>
+                          </div>
+
+                          <div>{item.cancelReason}</div>
+
+                          <div
+                            style={{
+                              marginTop: 8,
+                            }}
+                          >
+                            <strong>Nội dung:</strong>
+                          </div>
+
+                          <div>{item.cancelMessage}</div>
+
+                          <Button
+                            danger
+                            type="primary"
+                            loading={updatingId === item._id}
+                            style={{
+                              marginTop: 12,
+                            }}
+                            onClick={() => handleApproveCancel(item._id)}
+                          >
+                            Xác nhận hủy
+                          </Button>
+                        </div>
+                      ) : item.cancelStatus === "APPROVED" ? (
+                        <Tag color="red">Đã hủy</Tag>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
 
                     <td className="sticky-column">
                       <div className="action-group">
                         <Select
+                          disabled={item.cancelStatus === "REQUESTED"}
                           value={item.orderStatus}
                           loading={updatingId === item._id}
-                          style={{ width: 180 }}
+                          style={{
+                            width: 180,
+                          }}
                           onChange={(status) =>
                             handleUpdateStatus(item._id, status)
                           }
@@ -286,11 +375,9 @@ const OrderTable = ({ data, accessToken }: IProps) => {
                     </td>
                   </tr>
 
-                  {/* EXPANDED PRODUCTS */}
-
                   {isExpanded && (
                     <tr>
-                      <td colSpan={9} className="expanded-row">
+                      <td colSpan={10} className="expanded-row">
                         <div className="expanded-content">
                           <h4>Danh sách sản phẩm</h4>
 
@@ -325,8 +412,6 @@ const OrderTable = ({ data, accessToken }: IProps) => {
           </tbody>
         </table>
       </div>
-
-      {/* PAGINATION */}
 
       <div className="pagination-wrapper">
         <Pagination

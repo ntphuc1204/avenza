@@ -1,9 +1,26 @@
 "use client";
 
-import { Badge, Button, Card, Divider, List, Space, Spin, Typography } from "antd";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Badge,
+  Button,
+  Card,
+  Divider,
+  List,
+  Space,
+  Spin,
+  Typography,
+  notification,
+  Tag,
+} from "antd";
+
+import { useEffect, useRef, useState } from "react";
+
 import Link from "next/link";
+
 import { useSession } from "next-auth/react";
+
+import { io, Socket } from "socket.io-client";
+
 import { sendRequest } from "@/utils/api";
 
 interface IOrder {
@@ -18,141 +35,159 @@ interface IOrder {
 
 const NotificationPanel = () => {
   const { data: session } = useSession();
+
   const [orders, setOrders] = useState<IOrder[]>([]);
+
   const [loading, setLoading] = useState(true);
+
   const [newOrdersCount, setNewOrdersCount] = useState(0);
-  const [newPaidOrdersCount, setNewPaidOrdersCount] = useState(0);
-  const lastOrderAt = useRef<string | null>(null);
-  const lastPaidAt = useRef<string | null>(null);
+
+  const socketRef = useRef<Socket | null>(null);
 
   const accessToken = session?.user?.access_token;
 
-  const fetchNotifications = async () => {
+  // load danh sách ban đầu
+  const fetchOrders = async () => {
     if (!accessToken) return;
-    setLoading(true);
+
     try {
-      const orderRes = await sendRequest<IBackendRes<any>>({
+      setLoading(true);
+
+      const res = await sendRequest<IBackendRes<any>>({
         url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/orders`,
+
         method: "GET",
-        queryParams: { current: 1, pageSize: 20 },
-        headers: { Authorization: `Bearer ${accessToken}` },
+
+        queryParams: {
+          current: 1,
+          pageSize: 20,
+        },
+
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
       });
 
-      const fetchedOrders = orderRes?.data?.results ?? [];
-
-      if (lastOrderAt.current) {
-        const newOrders = fetchedOrders.filter(
-          (item: IOrder) =>
-            item.createdAt && item.createdAt > lastOrderAt.current,
+      if (res?.data?.results) {
+        const pendingOrders = res.data.results.filter(
+          (item: IOrder) => item.orderStatus === "PENDING",
         );
-        setNewOrdersCount(newOrders.length);
-      }
 
-      if (lastPaidAt.current) {
-        const newPaidOrders = fetchedOrders.filter(
-          (item: IOrder) =>
-            item.paymentStatus === "SUCCESS" &&
-            item.updatedAt &&
-            item.updatedAt > lastPaidAt.current,
-        );
-        setNewPaidOrdersCount(newPaidOrders.length);
+        setOrders(pendingOrders);
       }
-
-      const latestOrder = fetchedOrders.find(
-        (item: IOrder) => item.createdAt,
-      );
-      if (latestOrder?.createdAt) {
-        lastOrderAt.current = latestOrder.createdAt;
-      }
-
-      const latestPaidOrder = fetchedOrders
-        .filter((item: IOrder) => item.paymentStatus === "SUCCESS")
-        .sort((a, b) =>
-          new Date(b.updatedAt || "").getTime() -
-          new Date(a.updatedAt || "").getTime(),
-        )[0];
-      if (latestPaidOrder?.updatedAt) {
-        lastPaidAt.current = latestPaidOrder.updatedAt;
-      }
-
-      setOrders(fetchedOrders);
     } catch (error) {
-      console.error("Notification fetch error", error);
+      console.log(error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchNotifications();
+    fetchOrders();
   }, [accessToken]);
 
+  // realtime socket
   useEffect(() => {
-    const interval = window.setInterval(() => {
-      fetchNotifications();
-    }, 10000);
+    if (!accessToken) return;
 
-    return () => window.clearInterval(interval);
+    const socket = io(
+      process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080",
+      {
+        transports: ["websocket"],
+      },
+    );
+
+    socketRef.current = socket;
+
+    socket.on("new-order", (order: IOrder) => {
+      if (order.orderStatus !== "PENDING") return;
+
+      // thêm realtime vào đầu list
+      setOrders((prev) => [order, ...prev]);
+
+      // badge đỏ
+      setNewOrdersCount((prev) => prev + 1);
+
+      // popup notification
+      notification.success({
+        message: "Đơn hàng mới",
+        description: `Có đơn hàng mới #${order._id.slice(-6)}`,
+        placement: "topRight",
+      });
+    });
+
+    socket.on("connect", () => {
+      console.log("Socket connected");
+    });
+
+    socket.on("disconnect", () => {
+      console.log("Socket disconnected");
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, [accessToken]);
-
-  const orderNotifications = useMemo(
-    () =>
-      orders
-        .filter(
-          (order) =>
-            order.orderStatus === "PENDING" || order.paymentStatus === "SUCCESS",
-        )
-        .map((order) => ({
-          title:
-            order.paymentStatus === "SUCCESS"
-              ? `Đơn hàng đã thanh toán: ${order._id}`
-              : `Đơn hàng mới: ${order._id}`,
-          description: `Giá trị ${order.totalPrice?.toLocaleString("vi-VN")} đ — Trạng thái ${order.orderStatus} / ${order.paymentStatus}`,
-          date: order.paymentStatus === "SUCCESS" ? order.updatedAt : order.createdAt,
-        })),
-    [orders],
-  );
 
   return (
     <Spin spinning={loading}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 24,
+        }}
+      >
         <Typography.Title level={3}>Thông báo realtime</Typography.Title>
-        <Space size={16} direction="horizontal">
-          <Badge count={newOrdersCount} size="small">
-            <Card title="Đơn hàng mới" bordered>
+
+        <Space size={16}>
+          <Badge count={newOrdersCount}>
+            <Card title="Đơn hàng mới">
               <Typography.Text>
-                Số đơn hàng mới kể từ lần refresh trước: {newOrdersCount}
-              </Typography.Text>
-            </Card>
-          </Badge>
-          <Badge count={newPaidOrdersCount} size="small">
-            <Card title="Đã thanh toán" bordered>
-              <Typography.Text>
-                Số đơn hàng thanh toán mới: {newPaidOrdersCount}
+                Có {newOrdersCount} đơn hàng mới
               </Typography.Text>
             </Card>
           </Badge>
         </Space>
 
         <Card
-          title="Danh sách đơn hàng mới / đã thanh toán"
+          title="Danh sách thông báo"
           extra={
             <Link href="/dashboard/orders">
               <Button type="link">Xem quản lý đơn hàng</Button>
             </Link>
           }
-          bordered
         >
           <List
-            dataSource={orderNotifications}
-            renderItem={(item) => (
+            dataSource={orders}
+            locale={{
+              emptyText: "Không có thông báo",
+            }}
+            renderItem={(order) => (
               <List.Item>
                 <List.Item.Meta
-                  title={item.title}
-                  description={item.description}
+                  title={
+                    <Space>
+                      <span>Đơn hàng #{order._id.slice(-6)}</span>
+
+                      <Tag color="orange">{order.orderStatus}</Tag>
+                    </Space>
+                  }
+                  description={
+                    <>
+                      <div>
+                        Giá trị: {order.totalPrice?.toLocaleString("vi-VN")} đ
+                      </div>
+
+                      <div>Thanh toán: {order.paymentStatus}</div>
+                    </>
+                  }
                 />
+
                 <div>
-                  {item.date ? new Date(item.date).toLocaleString() : "-"}
+                  {order.createdAt
+                    ? new Date(order.createdAt).toLocaleString("vi-VN")
+                    : "-"}
                 </div>
               </List.Item>
             )}

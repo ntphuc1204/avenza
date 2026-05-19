@@ -15,10 +15,13 @@ import {
   Typography,
   notification,
   Divider,
+  Modal,
 } from "antd";
+
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+
 import GuestLayout from "@/components/layout/guest.layout";
 import { getAccount, sendRequest } from "@/utils/api";
 
@@ -26,38 +29,28 @@ const { Title, Text } = Typography;
 
 const CartPage = () => {
   const { data: session } = useSession();
-
   const router = useRouter();
-
   const [form] = Form.useForm();
 
-  const [initialValues, setInitialValues] = useState({
-    recipientName: "",
-    phone: "",
-    address: "",
-    paymentMethod: "COD",
-  });
-
   const [cart, setCart] = useState<any>(null);
-
   const [userProfile, setUserProfile] = useState<any>(null);
 
   const [loading, setLoading] = useState(false);
-
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const [paymentMethod, setPaymentMethod] = useState("COD");
 
+  // ================= PROFILE =================
   const loadProfile = async () => {
     if (!session?.user?.access_token) return;
 
-    const res = await getAccount<IBackendRes<any>>({
+    const res = await getAccount<any>({
       headers: {
         Authorization: `Bearer ${session.user.access_token}`,
       },
     });
 
-    const profileData = res?.data?.user ?? res?.data;
+    const profileData = res?.data?.user ?? res?.data ?? res;
 
     if (profileData) {
       setUserProfile(profileData);
@@ -69,17 +62,17 @@ const CartPage = () => {
         paymentMethod: "COD",
       };
 
-      setInitialValues(profileValues);
       form.setFieldsValue(profileValues);
     }
   };
 
+  // ================= CART =================
   const loadCart = async () => {
     if (!session?.user?.access_token) return;
 
     setLoading(true);
 
-    const res = await sendRequest<IBackendRes<any>>({
+    const res = await sendRequest<any>({
       url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/cart`,
       method: "GET",
       headers: {
@@ -88,10 +81,7 @@ const CartPage = () => {
     });
 
     setLoading(false);
-
-    if (res?.data) {
-      setCart(res.data);
-    }
+    setCart(res?.data ?? res);
   };
 
   useEffect(() => {
@@ -99,88 +89,57 @@ const CartPage = () => {
     loadProfile();
   }, [session]);
 
+  // ================= CHECK PROFILE =================
   const isMissingProfile = useMemo(() => {
-    if (!userProfile) return false;
-
+    if (!userProfile) return true;
     return !userProfile?.name || !userProfile?.phone || !userProfile?.address;
   }, [userProfile]);
 
+  // ================= UPDATE CART =================
   const updateItem = async (productId: string, quantity: number) => {
-    if (!session?.user?.access_token) return;
-
-    const res = await sendRequest<IBackendRes<any>>({
+    const res = await sendRequest<any>({
       url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/cart/update`,
       method: "PUT",
       headers: {
-        Authorization: `Bearer ${session.user.access_token}`,
+        Authorization: `Bearer ${session?.user?.access_token}`,
       },
       body: { productId, quantity },
     });
 
-    if (res?.data) {
-      setCart(res.data);
-    }
+    setCart(res?.data ?? res);
   };
 
   const removeItem = async (productId: string) => {
-    if (!session?.user?.access_token) return;
-
-    const res = await sendRequest<IBackendRes<any>>({
+    const res = await sendRequest<any>({
       url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/cart/remove/${productId}`,
       method: "DELETE",
       headers: {
-        Authorization: `Bearer ${session.user.access_token}`,
+        Authorization: `Bearer ${session?.user?.access_token}`,
       },
     });
 
-    if (res?.data) {
-      setCart(res.data);
-    }
+    setCart(res?.data ?? res);
   };
 
   const clearCart = async () => {
-    if (!session?.user?.access_token) return;
-
-    const res = await sendRequest<IBackendRes<any>>({
+    const res = await sendRequest<any>({
       url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/cart/clear`,
       method: "DELETE",
       headers: {
-        Authorization: `Bearer ${session.user.access_token}`,
+        Authorization: `Bearer ${session?.user?.access_token}`,
       },
     });
 
-    if (res?.data) {
-      setCart(res.data);
-    }
+    setCart(res?.data ?? res);
   };
 
-  const onFinish = async (values: any) => {
-    if (!session?.user?.access_token) {
-      router.push("/auth/login");
-      return;
-    }
-
-    if (isMissingProfile) {
-      notification.warning({
-        message: "Vui lòng cập nhật đầy đủ thông tin cá nhân",
-      });
-
-      router.push("/profile");
-      return;
-    }
-
-    if (!cart?.items?.length) {
-      notification.warning({ message: "Giỏ hàng trống" });
-      return;
-    }
-
-    setCheckoutLoading(true);
-
-    const orderRes = await sendRequest<IBackendRes<any>>({
+  // ================= ORDER =================
+  const createOrderCOD = async (values: any) => {
+    return await sendRequest<any>({
       url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/orders`,
       method: "POST",
       headers: {
-        Authorization: `Bearer ${session.user.access_token}`,
+        Authorization: `Bearer ${session?.user?.access_token}`,
       },
       body: {
         products: cart.items.map((item: any) => ({
@@ -193,72 +152,120 @@ const CartPage = () => {
           address: values.address,
           note: values.note,
         },
-        paymentMethod: values.paymentMethod,
+        paymentMethod: "COD",
       },
     });
+  };
 
-    if (!orderRes?.data) {
+  // ================= MOMO =================
+  const handleMomoPayment = async (values: any) => {
+    try {
+      setCheckoutLoading(true);
+
+      const paymentRes = await sendRequest<any>({
+        url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/payments/momo`,
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session?.user?.access_token}`,
+        },
+        body: {
+          orderData: {
+            userId: userProfile?._id,
+            products: cart.items.map((item: any) => ({
+              productId: item.productId,
+              quantity: item.quantity,
+            })),
+            shippingAddress: {
+              recipientName: values.recipientName,
+              phone: values.phone,
+              address: values.address,
+              note: values.note,
+            },
+          },
+          amount: cart.totalPrice,
+        },
+      });
+
+      const paymentUrl = paymentRes?.data?.paymentUrl;
+
+      if (!paymentUrl) {
+        throw new Error(paymentRes?.message || "Không tạo được MoMo URL");
+      }
+
+      window.location.href = paymentUrl;
+      return;
+    } catch (err: any) {
       setCheckoutLoading(false);
 
-      notification.error({
-        message: orderRes?.message || "Thanh toán thất bại",
+      Modal.error({
+        title: "Thanh toán MoMo thất bại",
+        content: err?.message || "Không thể kết nối tới cổng thanh toán MoMo",
       });
 
       return;
     }
+  };
 
-    if (values.paymentMethod === "VNPAY") {
-      const paymentRes = await sendRequest<IBackendRes<any>>({
-        url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/payments/vnpay`,
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${session.user.access_token}`,
-        },
-        body: {
-          orderId: orderRes.data._id,
-          amount: orderRes.data.totalPrice,
-        },
+  // ================= SUBMIT =================
+  const onFinish = async (values: any) => {
+    if (!session?.user?.access_token) {
+      router.push("/auth/login");
+      return;
+    }
+
+    if (!userProfile || isMissingProfile) {
+      notification.error({
+        message: "Thiếu thông tin người dùng",
       });
+      router.push("/profile");
+      return;
+    }
 
-      setCheckoutLoading(false);
+    if (!cart?.items?.length) {
+      notification.warning({
+        message: "Giỏ hàng trống",
+      });
+      return;
+    }
 
-      if (paymentRes?.data?.paymentUrl) {
-        window.location.href = paymentRes.data.paymentUrl;
+    setCheckoutLoading(true);
+
+    try {
+      // ================= MOMO =================
+      if (values.paymentMethod === "MOMO") {
+        await handleMomoPayment(values);
         return;
       }
 
-      notification.error({
-        message: paymentRes?.message || "Không thể tạo yêu cầu VNPay",
+      // ================= COD =================
+      const orderRes = await createOrderCOD(values);
+
+      if (!orderRes?.data?._id && !orderRes?._id) {
+        throw new Error(orderRes?.message || "Tạo đơn hàng thất bại");
+      }
+
+      notification.success({
+        message: "Đặt hàng thành công",
       });
 
-      return;
+      router.push("/orders");
+    } catch (error: any) {
+      Modal.error({
+        title: "Lỗi đặt hàng",
+        content: error?.message || "Có lỗi xảy ra",
+      });
+    } finally {
+      setCheckoutLoading(false);
     }
-
-    setCheckoutLoading(false);
-
-    notification.success({
-      message: "Đã tạo đơn hàng thành công",
-    });
-
-    router.push("/orders");
   };
 
+  // ================= UI =================
   if (!session) {
     return (
       <GuestLayout>
-        <div
-          style={{
-            textAlign: "center",
-            padding: 40,
-            background: "#ffffff",
-            borderRadius: 20,
-          }}
-        >
-          <Title level={3}>Bạn cần đăng nhập để xem giỏ hàng</Title>
-
-          <Button type="primary" onClick={() => router.push("/auth/login")}>
-            Đăng nhập ngay
-          </Button>
+        <div style={{ textAlign: "center", padding: 40 }}>
+          <Title level={3}>Bạn cần đăng nhập</Title>
+          <Button onClick={() => router.push("/auth/login")}>Đăng nhập</Button>
         </div>
       </GuestLayout>
     );
@@ -266,29 +273,17 @@ const CartPage = () => {
 
   return (
     <GuestLayout>
-      <div style={{ marginBottom: 24 }}>
-        <Title level={3}>Giỏ hàng của bạn</Title>
-      </div>
+      <Title level={3}>Giỏ hàng</Title>
 
-      <Row gutter={[24, 24]}>
-        <Col xs={24} lg={16}>
-          <Card style={{ borderRadius: 20 }} loading={loading}>
-            <Title level={4}>Mặt hàng</Title>
-
+      <Row gutter={24}>
+        <Col span={16}>
+          <Card loading={loading}>
             <List
               dataSource={cart?.items || []}
-              locale={{
-                emptyText: "Giỏ hàng của bạn hiện đang trống",
-              }}
               renderItem={(item: any) => (
                 <List.Item
                   actions={[
-                    <Button
-                      key="remove"
-                      type="link"
-                      danger
-                      onClick={() => removeItem(item.productId)}
-                    >
+                    <Button danger onClick={() => removeItem(item.productId)}>
                       Xóa
                     </Button>,
                   ]}
@@ -296,220 +291,65 @@ const CartPage = () => {
                   <List.Item.Meta
                     title={item.name}
                     description={
-                      <Space direction="vertical">
-                        <Text>
-                          Giá: {Number(item.price).toLocaleString("vi-VN")} ₫
-                        </Text>
-
-                        <Space>
-                          <Text>Số lượng:</Text>
-
-                          <InputNumber
-                            min={1}
-                            max={item.stock || 100}
-                            value={item.quantity}
-                            onChange={(value) =>
-                              updateItem(item.productId, Number(value))
-                            }
-                          />
-                        </Space>
+                      <Space>
+                        <InputNumber
+                          min={1}
+                          value={item.quantity}
+                          onChange={(v) =>
+                            updateItem(item.productId, Number(v))
+                          }
+                        />
+                        <Text>{item.price.toLocaleString("vi-VN")} ₫</Text>
                       </Space>
                     }
                   />
-
-                  <Text strong>
-                    {(item.price * item.quantity).toLocaleString("vi-VN")} ₫
-                  </Text>
                 </List.Item>
               )}
             />
 
-            {cart?.items?.length ? (
-              <div
-                style={{
-                  marginTop: 24,
-                  display: "flex",
-                  justifyContent: "flex-end",
-                }}
-              >
-                <Button danger onClick={clearCart}>
-                  Xóa toàn bộ giỏ hàng
-                </Button>
-              </div>
-            ) : null}
+            <Button danger onClick={clearCart}>
+              Xóa giỏ hàng
+            </Button>
           </Card>
         </Col>
 
-        <Col xs={24} lg={8}>
-          <Card style={{ borderRadius: 20 }}>
-            <Title level={4}>Thanh toán</Title>
+        <Col span={8}>
+          <Card>
+            <Statistic
+              title="Tổng tiền"
+              value={cart?.totalPrice || 0}
+              suffix="₫"
+            />
 
-            <Space direction="vertical" size={16} style={{ width: "100%" }}>
-              <Statistic
-                title="Tổng tiền"
-                value={cart?.totalPrice || 0}
-                suffix="₫"
-              />
+            <Form form={form} onFinish={onFinish}>
+              <Form.Item name="recipientName" rules={[{ required: true }]}>
+                <Input placeholder="Tên người nhận" />
+              </Form.Item>
 
-              <Divider />
+              <Form.Item name="phone" rules={[{ required: true }]}>
+                <Input placeholder="Số điện thoại" />
+              </Form.Item>
 
-              {userProfile && (
-                <div
-                  style={{
-                    marginBottom: 16,
-                    padding: 16,
-                    borderRadius: 16,
-                    background: "#f5f7fa",
-                    border: "1px solid #e6f7ff",
-                  }}
-                >
-                  <Title level={5} style={{ marginBottom: 12 }}>
-                    Thông tin người nhận
-                  </Title>
-                  <div style={{ marginBottom: 8 }}>
-                    <Text strong>Họ và tên: </Text>
-                    <Text>{userProfile.name || "-"}</Text>
-                  </div>
-                  <div style={{ marginBottom: 8 }}>
-                    <Text strong>Số điện thoại: </Text>
-                    <Text>{userProfile.phone || "-"}</Text>
-                  </div>
-                  <div style={{ marginBottom: 8 }}>
-                    <Text strong>Địa chỉ: </Text>
-                    <Text>{userProfile.address || "-"}</Text>
-                  </div>
-                  {userProfile.email ? (
-                    <div style={{ marginBottom: 8 }}>
-                      <Text strong>Email: </Text>
-                      <Text>{userProfile.email}</Text>
-                    </div>
-                  ) : null}
-                  <Button type="link" onClick={() => router.push("/profile")}>
-                    Cập nhật hồ sơ
-                  </Button>
-                </div>
-              )}
+              <Form.Item name="address" rules={[{ required: true }]}>
+                <Input.TextArea placeholder="Địa chỉ" />
+              </Form.Item>
 
-              {isMissingProfile && (
-                <div
-                  style={{
-                    marginBottom: 16,
-                    padding: 12,
-                    borderRadius: 12,
-                    background: "#fff7e6",
-                    border: "1px solid #ffd591",
-                  }}
-                >
-                  <Text>Bạn chưa cập nhật đầy đủ thông tin cá nhân.</Text>
+              <Form.Item name="paymentMethod" initialValue="COD">
+                <Radio.Group onChange={(e) => setPaymentMethod(e.target.value)}>
+                  <Radio value="COD">COD</Radio>
+                  <Radio value="MOMO">MoMo</Radio>
+                </Radio.Group>
+              </Form.Item>
 
-                  <div style={{ marginTop: 10 }}>
-                    <Button
-                      type="primary"
-                      onClick={() => router.push("/profile")}
-                    >
-                      Cập nhật thông tin
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              <Form
-                form={form}
-                layout="vertical"
-                onFinish={onFinish}
-                initialValues={initialValues}
+              <Button
+                type="primary"
+                htmlType="submit"
+                block
+                loading={checkoutLoading}
               >
-                <Form.Item
-                  name="recipientName"
-                  label="Tên người nhận"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Nhập tên người nhận",
-                    },
-                  ]}
-                >
-                  <Input />
-                </Form.Item>
-
-                <Form.Item
-                  name="phone"
-                  label="Số điện thoại"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Nhập số điện thoại",
-                    },
-                  ]}
-                >
-                  <Input />
-                </Form.Item>
-
-                <Form.Item
-                  name="address"
-                  label="Địa chỉ giao hàng"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Nhập địa chỉ giao hàng",
-                    },
-                  ]}
-                >
-                  <Input.TextArea rows={3} />
-                </Form.Item>
-
-                <Form.Item name="note" label="Ghi chú">
-                  <Input.TextArea rows={2} />
-                </Form.Item>
-
-                <Form.Item
-                  name="paymentMethod"
-                  label="Phương thức thanh toán"
-                  initialValue="COD"
-                  rules={[{ required: true }]}
-                >
-                  <Radio.Group
-                    onChange={(event) => setPaymentMethod(event.target.value)}
-                    value={paymentMethod}
-                  >
-                    <Space direction="vertical">
-                      <Radio value="COD">Thanh toán khi nhận hàng (COD)</Radio>
-
-                      <Radio value="VNPAY">Thanh toán VNPay</Radio>
-                    </Space>
-                  </Radio.Group>
-                </Form.Item>
-
-                {paymentMethod === "VNPAY" ? (
-                  <div
-                    style={{
-                      padding: 12,
-                      borderRadius: 12,
-                      background: "#f7fbff",
-                      border: "1px solid #d6e4ff",
-                      marginBottom: 16,
-                    }}
-                  >
-                    <Text type="secondary">
-                      Bạn sẽ được chuyển đến cổng thanh toán VNPay để hoàn tất
-                      giao dịch.
-                    </Text>
-                  </div>
-                ) : null}
-
-                <Form.Item>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    block
-                    loading={checkoutLoading}
-                    disabled={!cart?.items?.length}
-                  >
-                    Đặt hàng
-                  </Button>
-                </Form.Item>
-              </Form>
-            </Space>
+                Đặt hàng
+              </Button>
+            </Form>
           </Card>
         </Col>
       </Row>

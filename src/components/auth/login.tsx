@@ -13,7 +13,7 @@ import { useRouter } from "next/navigation";
 import ModalReactive from "./modal.reactive";
 
 import { useState } from "react";
-
+import { getSession } from "next-auth/react";
 import ModalChangePassword from "./modal.change.password";
 
 const Login = () => {
@@ -27,29 +27,17 @@ const Login = () => {
 
   const onFinish = async (values: any) => {
     try {
-      console.log("========== LOGIN VALUES ==========");
-      console.log(values);
-
       const { username, password } = values;
 
       setUserEmail("");
 
-      // trigger sign-in
       const res = await authenticate(username, password);
 
-      console.log("========== LOGIN RESPONSE ==========");
-      console.log(res);
-
       if (res?.error) {
-        console.log("========== LOGIN ERROR ==========");
-        console.log("CODE:", res?.code);
-        console.log("ERROR:", res?.error);
-
         // tài khoản chưa active
         if (res?.code === 2) {
           setIsModalOpen(true);
           setUserEmail(username);
-
           return;
         }
 
@@ -57,23 +45,29 @@ const Login = () => {
           message: "Error login",
           description: res?.error,
         });
-      } else {
-        console.log("========== LOGIN SUCCESS ==========");
 
-        // redirect
-        router.push("/dashboard");
+        return;
+      }
+
+      // LOGIN SUCCESS
+      // kiểm tra role
+
+      if (!res?.error) {
+        const session = await getSession();
+
+        if (session?.user?.role === "admin") {
+          router.push("/dashboard");
+        } else {
+          router.push("/");
+        }
       }
     } catch (error: any) {
-      console.log("========== LOGIN CATCH ERROR ==========");
-      console.log(error);
-
       notification.error({
         message: "Login failed",
         description: error?.message || "Có lỗi xảy ra khi đăng nhập",
       });
     }
   };
-
   return (
     <>
       <Row justify={"center"} style={{ marginTop: "30px" }}>
