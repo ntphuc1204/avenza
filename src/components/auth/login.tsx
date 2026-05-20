@@ -56,9 +56,9 @@ const Login = () => {
         const session = await getSession();
 
         if (session?.user?.role === "admin") {
-          router.push("/dashboard");
+          window.location.href = "/dashboard";
         } else {
-          router.push("/");
+          window.location.href = "/";
         }
       }
     } catch (error: any) {

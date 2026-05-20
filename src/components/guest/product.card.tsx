@@ -72,7 +72,7 @@ const ProductCard = ({ product, onAddToCart }: IProductCardProps) => {
             <img
               src={imageUrl}
               alt={product.name}
-              style={{ width: "100%", height: 180, objectFit: "cover" }}
+              style={{ width: "100%", height: "auto", objectFit: "cover" }}
             />
           </div>
         </Link>
