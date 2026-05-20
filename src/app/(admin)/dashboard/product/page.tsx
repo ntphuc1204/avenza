@@ -53,6 +53,16 @@ const ManageProductPage = async (props: IProps) => {
     },
   });
 
+  const supplierRes = await sendRequest<IBackendRes<any>>({
+    url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/suppliers`,
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${session?.user?.access_token}`,
+    },
+  });
+
+  const suppliers = Array.isArray(supplierRes?.data) ? supplierRes.data : [];
+
   return (
     <div>
       <ProductTable
@@ -68,6 +78,7 @@ const ManageProductPage = async (props: IProps) => {
           }
         }
         categories={categoryRes?.data?.results ?? []}
+        suppliers={suppliers}
         accessToken={session?.user?.access_token ?? ""}
       />
     </div>

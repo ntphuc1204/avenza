@@ -26,6 +26,7 @@ const ProductCard = ({ product, onAddToCart }: IProductCardProps) => {
     }
 
     setLoading(true);
+
     const res = await sendRequest<IBackendRes<any>>({
       url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/cart/add`,
       method: "POST",
@@ -37,6 +38,7 @@ const ProductCard = ({ product, onAddToCart }: IProductCardProps) => {
         quantity: 1,
       },
     });
+
     setLoading(false);
 
     if (res?.data) {
@@ -92,23 +94,29 @@ const ProductCard = ({ product, onAddToCart }: IProductCardProps) => {
             {product.name}
           </Title>
         </Link>
+
         <Text type="secondary">
           {product.categoryId?.name || "Danh mục chung"}
         </Text>
+
+        {/* ⭐ FIX RATING CHUẨN REALTIME */}
         <Row align="middle" justify="space-between">
           <Rate
             allowHalf
             disabled
-            defaultValue={product.rating || 0}
+            value={Number(product.rating) || 0}
             style={{ fontSize: 12 }}
           />
+
           <Text strong style={{ color: "#1677ff" }}>
             {Number(product.price).toLocaleString("vi-VN")} ₫
           </Text>
         </Row>
+
         <Text type={product.stock ? "success" : "danger"}>
           {product.stock > 0 ? `Còn ${product.stock} sản phẩm` : "Hết hàng"}
         </Text>
+
         <Button
           type="primary"
           block

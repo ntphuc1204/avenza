@@ -13,6 +13,8 @@ import {
   CommentOutlined,
   ShoppingCartOutlined,
   RobotOutlined,
+  TruckOutlined,
+  ImportOutlined,
 } from "@ant-design/icons";
 
 import React, { useContext, useEffect, useRef, useState } from "react";
@@ -98,6 +100,22 @@ const AdminSideBar = () => {
           label: <Link href="/dashboard/categories">Manage Categories</Link>,
 
           icon: <ProfileOutlined />,
+        },
+
+        {
+          key: "suppliers",
+
+          label: <Link href="/dashboard/suppliers">Nhà cung cấp</Link>,
+
+          icon: <TruckOutlined />,
+        },
+
+        {
+          key: "stock-imports",
+
+          label: <Link href="/dashboard/stock-imports">Nhập hàng</Link>,
+
+          icon: <ImportOutlined />,
         },
 
         {

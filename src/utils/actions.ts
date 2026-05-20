@@ -137,32 +137,18 @@ export const handleCreateUserAction = async (data: any) => {
 export const handleCreateProductAction = async (data: any) => {
   const session = await auth();
 
-  const formData = new FormData();
-
-  formData.append("name", data.name);
-  formData.append("slug", data.slug || "");
-  formData.append("description", data.description || "");
-  formData.append("price", String(data.price));
-  formData.append("stock", String(data.stock));
-  formData.append("categoryId", data.categoryId);
-  formData.append("status", data.status);
-  formData.append("isFeatured", String(data.isFeatured));
-
-  if (Array.isArray(data.images)) {
-    data.images.forEach((file: File) => {
-      formData.append("images", file);
-    });
-  }
-
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/products`, {
+  const res = await sendRequest<IBackendRes<any>>({
+    url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/products`,
     method: "POST",
     headers: {
       Authorization: `Bearer ${session?.user?.access_token}`,
     },
-    body: formData,
+    body: data,
   });
 
-  return res.json();
+  revalidateTag("list-products");
+
+  return res;
 };
 export const handleUpdateProductAction = async (data: any) => {
     const session = await auth();

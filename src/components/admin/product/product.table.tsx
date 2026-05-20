@@ -12,7 +12,6 @@ import ProductCreate from "./product.create";
 import ProductUpdate from "./product.update";
 
 import { handleDeleteProductAction } from "@/utils/actions";
-import { auth } from "@/auth";
 
 interface IProduct {
   _id: string;
@@ -20,12 +19,17 @@ interface IProduct {
   slug?: string;
   description?: string;
   price: number;
+  importPrice?: number;
   stock: number;
-  images?: string[];
+
+  // 👇 cho phép nhiều kiểu dữ liệu
+  images?: any;
+
   categoryId?: {
     _id: string;
     name: string;
   };
+
   isFeatured?: boolean;
   status?: string;
   createdAt: string;
@@ -46,9 +50,11 @@ interface IProps {
   };
 
   categories?: any[];
+  suppliers?: any[];
   accessToken: string;
 }
-const ProductTable = ({ data, categories = [], accessToken }: IProps) => {
+
+const ProductTable = ({ data, categories = [], suppliers = [], accessToken }: IProps) => {
   const products = data?.results || [];
 
   const meta = data?.meta || {
@@ -57,6 +63,7 @@ const ProductTable = ({ data, categories = [], accessToken }: IProps) => {
     pages: 0,
     total: 0,
   };
+
   const pathname = usePathname();
 
   const searchParams = useSearchParams();
@@ -71,18 +78,47 @@ const ProductTable = ({ data, categories = [], accessToken }: IProps) => {
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const renderImage = (images?: string[]) => {
+  // =========================
+  // FIX IMAGE
+  // =========================
+  const renderImage = (images?: any) => {
     const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "";
 
-    const image = images?.[0];
+    // không có ảnh
+    if (!images) {
+      return "/images/no-image.png";
+    }
 
-    return image
-      ? image.startsWith("http")
-        ? image
-        : `${baseUrl}${image}`
-      : "/images/no-image.png";
+    // nếu images là string
+    if (typeof images === "string") {
+      return images.startsWith("http") ? images : `${baseUrl}${images}`;
+    }
+
+    // nếu images là array
+    if (Array.isArray(images) && images.length > 0) {
+      const firstImage = images[0];
+
+      // array string[]
+      if (typeof firstImage === "string") {
+        return firstImage.startsWith("http")
+          ? firstImage
+          : `${baseUrl}${firstImage}`;
+      }
+
+      // array object[]
+      if (typeof firstImage === "object" && firstImage?.url) {
+        return firstImage.url.startsWith("http")
+          ? firstImage.url
+          : `${baseUrl}${firstImage.url}`;
+      }
+    }
+
+    return "/images/no-image.png";
   };
 
+  // =========================
+  // DELETE
+  // =========================
   const handleDelete = async (id: string) => {
     setDeletingId(id);
 
@@ -103,6 +139,9 @@ const ProductTable = ({ data, categories = [], accessToken }: IProps) => {
     }
   };
 
+  // =========================
+  // PAGINATION
+  // =========================
   const handlePagination = (page: number, pageSize: number) => {
     const params = new URLSearchParams(searchParams);
 
@@ -136,7 +175,9 @@ const ProductTable = ({ data, categories = [], accessToken }: IProps) => {
               <th>Ảnh</th>
               <th>Tên sản phẩm</th>
               <th>Danh mục</th>
-              <th>Giá</th>
+              <th>Giá bán</th>
+              <th>Giá nhập</th>
+              <th>Lợi nhuận</th>
               <th>Kho</th>
               <th>Trạng thái</th>
 
@@ -147,26 +188,61 @@ const ProductTable = ({ data, categories = [], accessToken }: IProps) => {
           <tbody>
             {products.map((item) => (
               <tr key={item._id}>
+                {/* IMAGE */}
                 <td>
                   <img
                     src={renderImage(item.images)}
                     alt={item.name}
                     className="table-image"
+                    style={{
+                      width: 70,
+                      height: 70,
+                      objectFit: "cover",
+                      borderRadius: 8,
+                      border: "1px solid #eee",
+                    }}
                   />
                 </td>
 
+                {/* NAME */}
                 <td>
                   <div className="table-name">{item.name}</div>
 
                   <div className="table-subtext">{item.slug}</div>
                 </td>
 
+                {/* CATEGORY */}
                 <td>{item.categoryId?.name || "-"}</td>
 
+                {/* PRICE */}
                 <td>{item.price?.toLocaleString("vi-VN")} đ</td>
 
+                <td>
+                  {(item.importPrice ?? 0).toLocaleString("vi-VN")} đ
+                </td>
+
+                <td>
+                  {item.price > 0 && item.importPrice != null ? (
+                    <span style={{ color: "#52c41a" }}>
+                      {(
+                        item.price - (item.importPrice ?? 0)
+                      ).toLocaleString("vi-VN")}{" "}
+                      đ (
+                      {Math.round(
+                        ((item.price - (item.importPrice ?? 0)) / item.price) *
+                          100,
+                      )}
+                      %)
+                    </span>
+                  ) : (
+                    "-"
+                  )}
+                </td>
+
+                {/* STOCK */}
                 <td>{item.stock}</td>
 
+                {/* STATUS */}
                 <td>
                   <span
                     className={`status-badge ${
@@ -179,6 +255,7 @@ const ProductTable = ({ data, categories = [], accessToken }: IProps) => {
                   </span>
                 </td>
 
+                {/* ACTION */}
                 <td className="sticky-column">
                   <div className="action-group">
                     <EditTwoTone
@@ -233,6 +310,7 @@ const ProductTable = ({ data, categories = [], accessToken }: IProps) => {
         isCreateModalOpen={isCreateModalOpen}
         setIsCreateModalOpen={setIsCreateModalOpen}
         categories={categories}
+        suppliers={suppliers}
         accessToken={accessToken}
       />
 
@@ -242,6 +320,7 @@ const ProductTable = ({ data, categories = [], accessToken }: IProps) => {
         dataUpdate={dataUpdate}
         setDataUpdate={setDataUpdate}
         categories={categories}
+        suppliers={suppliers}
         accessToken={accessToken}
       />
     </div>

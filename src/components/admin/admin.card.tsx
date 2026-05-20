@@ -8,6 +8,9 @@ import { useSession } from "next-auth/react";
 interface IOrderStats {
   totalOrders: number;
   totalRevenue: number;
+  totalCost?: number;
+  totalProfit?: number;
+  profitMarginPercent?: number;
   totalUsers: number;
   activeUsers: number;
   inactiveUsers: number;
@@ -27,6 +30,9 @@ const AdminCard = () => {
   const [orderStats, setOrderStats] = useState<IOrderStats>({
     totalOrders: 0,
     totalRevenue: 0,
+    totalCost: 0,
+    totalProfit: 0,
+    profitMarginPercent: 0,
     totalUsers: 0,
     activeUsers: 0,
     inactiveUsers: 0,
@@ -64,6 +70,9 @@ const AdminCard = () => {
           setOrderStats({
             totalOrders: orderRes.data.totalOrders || 0,
             totalRevenue: orderRes.data.totalRevenue || 0,
+            totalCost: orderRes.data.totalCost || 0,
+            totalProfit: orderRes.data.totalProfit || 0,
+            profitMarginPercent: orderRes.data.profitMarginPercent || 0,
             totalUsers: orderRes.data.totalUsers || 0,
             activeUsers: orderRes.data.activeUsers || 0,
             inactiveUsers: orderRes.data.inactiveUsers || 0,
@@ -201,9 +210,38 @@ const AdminCard = () => {
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Total Revenue" bordered={false}>
+          <Card title="Doanh thu" bordered={false}>
             <div style={{ fontSize: 24, fontWeight: "bold", color: "#fa8c16" }}>
               {orderStats.totalRevenue?.toLocaleString("vi-VN")} đ
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={8}>
+          <Card title="Giá vốn (ước tính)" bordered={false}>
+            <div style={{ fontSize: 24, fontWeight: "bold", color: "#eb2f96" }}>
+              {(orderStats.totalCost ?? 0).toLocaleString("vi-VN")} đ
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={8}>
+          <Card title="Lợi nhuận" bordered={false}>
+            <div
+              style={{
+                fontSize: 24,
+                fontWeight: "bold",
+                color: (orderStats.totalProfit ?? 0) >= 0 ? "#52c41a" : "#ff4d4f",
+              }}
+            >
+              {(orderStats.totalProfit ?? 0).toLocaleString("vi-VN")} đ
+            </div>
+          </Card>
+        </Col>
+      </Row>
+      <Row gutter={16} style={{ marginBottom: 16 }}>
+        <Col xs={24} sm={12} md={8}>
+          <Card title="Biên lợi nhuận" bordered={false}>
+            <div style={{ fontSize: 24, fontWeight: "bold", color: "#13c2c2" }}>
+              {orderStats.profitMarginPercent ?? 0}%
             </div>
           </Card>
         </Col>
@@ -214,8 +252,6 @@ const AdminCard = () => {
             </div>
           </Card>
         </Col>
-      </Row>
-      <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} md={8}>
           <Card title="Total Categories" bordered={false}>
             <div style={{ fontSize: 24, fontWeight: "bold", color: "#722ed1" }}>
