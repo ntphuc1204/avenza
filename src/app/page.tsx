@@ -47,16 +47,21 @@ const HomePage = () => {
   const search = searchParams?.get("search") ?? "";
 
   const buildProductQueryParams = (page = 1) => {
-    const params: any = {
-      current: page,
-      pageSize: allPageSize,
-    };
+    const filter: any = {};
 
-    if (search) {
-      params.search = search;
+    if (selectedCategory) {
+      filter.categoryId = selectedCategory;
     }
 
-    return params;
+    if (search) {
+      filter.search = search;
+    }
+
+    return {
+      current: page,
+      pageSize: allPageSize,
+      query: JSON.stringify(filter),
+    };
   };
 
   const loadCategories = async () => {
@@ -81,14 +86,8 @@ const HomePage = () => {
   const loadProducts = async () => {
     setLoading(true);
 
-    let url = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/products`;
-
-    if (selectedCategory) {
-      url = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/products/category/${selectedCategory}`;
-    }
-
     const res = await sendRequest<IBackendRes<any>>({
-      url,
+      url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/products`,
       method: "GET",
       queryParams: buildProductQueryParams(1),
     });
@@ -97,8 +96,6 @@ const HomePage = () => {
 
     if (res?.data?.results) {
       setProducts(res.data.results);
-    } else if (Array.isArray(res?.data)) {
-      setProducts(res.data);
     } else {
       setProducts([]);
     }
@@ -118,14 +115,8 @@ const HomePage = () => {
   const loadAllProducts = async (page = 1) => {
     setAllLoading(true);
 
-    let url = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/products`;
-
-    if (selectedCategory) {
-      url = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/products/category/${selectedCategory}`;
-    }
-
     const res = await sendRequest<IBackendRes<any>>({
-      url,
+      url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/products`,
       method: "GET",
       queryParams: buildProductQueryParams(page),
     });
@@ -136,12 +127,6 @@ const HomePage = () => {
       setAllProducts(res.data.results);
 
       setAllTotal(res.data.meta?.total || 0);
-
-      setAllCurrent(page);
-    } else if (Array.isArray(res?.data)) {
-      setAllProducts(res.data);
-
-      setAllTotal(res.data.length);
 
       setAllCurrent(page);
     } else {
