@@ -16,6 +16,8 @@ import {
   notification,
   Divider,
   Modal,
+  Select,
+  Tag,
 } from "antd";
 
 import { useEffect, useMemo, useState } from "react";
@@ -39,6 +41,16 @@ const CartPage = () => {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const [paymentMethod, setPaymentMethod] = useState("COD");
+
+  const [myDiscounts, setMyDiscounts] = useState<any[]>([]);
+
+  const [selectedDiscount, setSelectedDiscount] = useState<any>(null);
+
+  const [discountLoading, setDiscountLoading] = useState(false);
+
+  const discountAmount = selectedDiscount?.discountAmount || 0;
+
+  const finalPrice = Math.max((cart?.totalPrice || 0) - discountAmount, 0);
 
   // ================= PROFILE =================
   const loadProfile = async () => {
@@ -84,9 +96,24 @@ const CartPage = () => {
     setCart(res?.data ?? res);
   };
 
+  const loadMyDiscounts = async () => {
+    if (!session?.user?.access_token) return;
+
+    const res = await sendRequest<IBackendRes<any[]>>({
+      url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/discounts/mine`,
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${session.user.access_token}`,
+      },
+    });
+
+    setMyDiscounts((res?.data || []).filter((item: any) => !item.isUsed));
+  };
+
   useEffect(() => {
     loadCart();
     loadProfile();
+    loadMyDiscounts();
   }, [session]);
 
   // ================= CHECK PROFILE =================
@@ -109,6 +136,7 @@ const CartPage = () => {
     if (res?.data) {
       // reload lại cart chuẩn từ DB
       await loadCart();
+      setSelectedDiscount(null);
 
       // update badge realtime
       window.dispatchEvent(new Event("cartUpdated"));
@@ -126,6 +154,7 @@ const CartPage = () => {
 
     if (res?.data) {
       await loadCart();
+      setSelectedDiscount(null);
 
       window.dispatchEvent(new Event("cartUpdated"));
     }
@@ -141,6 +170,44 @@ const CartPage = () => {
     });
 
     setCart(res?.data ?? res);
+    setSelectedDiscount(null);
+  };
+
+  const applyDiscount = async (code: string) => {
+    if (!code || !cart?.items?.length) return;
+
+    setDiscountLoading(true);
+
+    const res = await sendRequest<IBackendRes<any>>({
+      url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/discounts/preview`,
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session?.user?.access_token}`,
+      },
+      body: {
+        code,
+        totalPrice: cart.totalPrice,
+        items: cart.items.map((item: any) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+      },
+    });
+
+    setDiscountLoading(false);
+
+    if (res?.data) {
+      setSelectedDiscount(res.data);
+      notification.success({
+        message: `Đã áp dụng ${res.data.discount.code}`,
+      });
+    } else {
+      setSelectedDiscount(null);
+      notification.error({
+        message: res?.message || "Voucher không hợp lệ",
+      });
+    }
   };
 
   // ================= ORDER =================
@@ -163,6 +230,7 @@ const CartPage = () => {
           note: values.note,
         },
         paymentMethod: "COD",
+        discountCode: selectedDiscount?.discount?.code,
       },
     });
   };
@@ -191,6 +259,9 @@ const CartPage = () => {
             })),
 
             totalPrice: cart.totalPrice,
+            discountAmount,
+            finalPrice,
+            discountCode: selectedDiscount?.discount?.code,
 
             shippingAddress: {
               recipientName: values.recipientName,
@@ -199,7 +270,7 @@ const CartPage = () => {
               note: values.note,
             },
           },
-          amount: cart.totalPrice,
+          amount: finalPrice,
         },
       });
 
@@ -337,6 +408,55 @@ const CartPage = () => {
               value={cart?.totalPrice || 0}
               suffix="₫"
             />
+
+            <Divider />
+
+            <Space direction="vertical" style={{ width: "100%" }}>
+              <Text strong>Voucher</Text>
+              <Select
+                allowClear
+                loading={discountLoading}
+                placeholder="Chọn voucher đã nhận"
+                style={{ width: "100%" }}
+                onChange={(code) => {
+                  if (code) {
+                    applyDiscount(code);
+                  } else {
+                    setSelectedDiscount(null);
+                  }
+                }}
+                options={myDiscounts
+                  .filter((item) => item.discountId)
+                  .map((item) => ({
+                    label: `${item.discountId.code} - ${item.discountId.title}`,
+                    value: item.discountId.code,
+                  }))}
+              />
+              <Button type="link" onClick={() => router.push("/my-discounts")}>
+                Xem voucher của tôi
+              </Button>
+
+              {selectedDiscount ? (
+                <div
+                  style={{
+                    background: "#fff7e6",
+                    border: "1px solid #ffd591",
+                    borderRadius: 12,
+                    padding: 12,
+                  }}
+                >
+                  <Space direction="vertical" size={4}>
+                    <Tag color="orange">{selectedDiscount.discount.code}</Tag>
+                    <Text>Giảm: {discountAmount.toLocaleString("vi-VN")} đ</Text>
+                    <Text strong>
+                      Còn thanh toán: {finalPrice.toLocaleString("vi-VN")} đ
+                    </Text>
+                  </Space>
+                </div>
+              ) : null}
+            </Space>
+
+            <Divider />
 
             <Form form={form} onFinish={onFinish}>
               <Form.Item name="recipientName" rules={[{ required: true }]}>

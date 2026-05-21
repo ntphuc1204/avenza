@@ -14,6 +14,7 @@ import {
   RobotOutlined,
   TruckOutlined,
   ImportOutlined,
+  GiftOutlined,
 } from "@ant-design/icons";
 
 import React, { useContext, useEffect, useRef, useState } from "react";
@@ -162,6 +163,13 @@ const AdminSideBar = () => {
           label: <Link href="/dashboard/reviews">Manage Reviews</Link>,
 
           icon: <CommentOutlined />,
+        },
+        {
+          key: "discounts",
+
+          label: <Link href="/dashboard/discounts">Manage Vouchers</Link>,
+
+          icon: <GiftOutlined />,
         },
         {
           key: "notifications",

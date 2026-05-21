@@ -3,6 +3,7 @@
 import {
   AppstoreOutlined,
   BellOutlined,
+  GiftOutlined,
   HomeOutlined,
   RobotOutlined,
   ShoppingCartOutlined,
@@ -199,6 +200,18 @@ const GuestHeader = () => {
           }}
         >
           Đơn hàng
+        </Button>
+      </Link>
+
+      <Link href="/my-discounts">
+        <Button
+          type="text"
+          icon={<GiftOutlined />}
+          style={{
+            width: screens.md ? "auto" : "100%",
+          }}
+        >
+          Voucher
         </Button>
       </Link>
 

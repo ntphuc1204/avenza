@@ -2,13 +2,16 @@
 
 import {
   Button,
+  Card,
   Col,
   Empty,
   Pagination,
+  Progress,
   Row,
   Skeleton,
   Tag,
   Typography,
+  notification,
 } from "antd";
 
 import { useEffect, useState } from "react";
@@ -51,6 +54,10 @@ const HomePage = () => {
   const [products, setProducts] = useState<any[]>([]);
 
   const [topProducts, setTopProducts] = useState<any[]>([]);
+
+  const [discounts, setDiscounts] = useState<any[]>([]);
+
+  const [claimedDiscountIds, setClaimedDiscountIds] = useState<string[]>([]);
 
   const [loading, setLoading] = useState(true);
 
@@ -136,6 +143,67 @@ const HomePage = () => {
     }
   };
 
+  const loadDiscounts = async () => {
+    const res = await sendRequest<IBackendRes<any>>({
+      url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/discounts`,
+      method: "GET",
+      queryParams: {
+        current: 1,
+        pageSize: 6,
+      },
+    });
+
+    setDiscounts(res?.data?.results ?? []);
+  };
+
+  const loadClaimedDiscounts = async () => {
+    if (!session?.user?.access_token) {
+      setClaimedDiscountIds([]);
+      return;
+    }
+
+    const res = await sendRequest<IBackendRes<any[]>>({
+      url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/discounts/mine`,
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${session.user.access_token}`,
+      },
+    });
+
+    const ids = (res?.data || [])
+      .map((item: any) => {
+        const discount = item.discountId;
+        return typeof discount === "string" ? discount : discount?._id;
+      })
+      .filter(Boolean);
+
+    setClaimedDiscountIds(ids);
+  };
+
+  const handleClaim = async (discountId: string) => {
+    if (!session?.user?.access_token) {
+      notification.warning({ message: "Vui lòng đăng nhập để nhận voucher" });
+      return;
+    }
+
+    const res = await sendRequest<IBackendRes<any>>({
+      url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/discounts/${discountId}/claim`,
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.user.access_token}`,
+      },
+    });
+
+    if (res?.data) {
+      setClaimedDiscountIds((prev) =>
+        prev.includes(discountId) ? prev : [...prev, discountId],
+      );
+      notification.success({ message: "Đã nhận voucher" });
+    } else {
+      notification.error({ message: res?.message || "Nhận voucher thất bại" });
+    }
+  };
+
   const loadAllProducts = async (page = 1) => {
     setAllLoading(true);
 
@@ -164,7 +232,13 @@ const HomePage = () => {
     loadCategories();
 
     loadTopProducts();
+
+    loadDiscounts();
   }, []);
+
+  useEffect(() => {
+    loadClaimedDiscounts();
+  }, [session]);
 
   useEffect(() => {
     loadProducts();
@@ -238,6 +312,118 @@ const HomePage = () => {
           </SwiperSlide>
         </Swiper>
       </div>
+
+      {/* DISCOUNTS */}
+      {discounts.length ? (
+        <div
+          style={{
+            ...cardStyle,
+            marginBottom: 24,
+          }}
+        >
+          <Row justify="space-between" align="middle">
+            <Col>
+              <Title level={4}>Voucher nổi bật</Title>
+              <Text type="secondary">Nhận mã ưu đãi và áp dụng khi checkout.</Text>
+            </Col>
+          </Row>
+
+          <div
+            style={{
+              display: "flex",
+              gap: 16,
+              marginTop: 16,
+              overflowX: "auto",
+              overflowY: "hidden",
+              paddingBottom: 8,
+              scrollSnapType: "x mandatory",
+            }}
+          >
+            {discounts.map((discount) => {
+              const isClaimed = claimedDiscountIds.includes(discount._id);
+              const remaining =
+                discount.quantity > 0
+                  ? Math.max(discount.quantity - discount.used, 0)
+                  : null;
+              const percent =
+                discount.quantity > 0
+                  ? Math.round((discount.used / discount.quantity) * 100)
+                  : 0;
+
+              return (
+                <div
+                  key={discount._id}
+                  style={{
+                    flex: "0 0 clamp(280px, 32%, 380px)",
+                    scrollSnapAlign: "start",
+                  }}
+                >
+                  <Card
+                    bordered={false}
+                    style={{
+                      minHeight: 220,
+                      borderRadius: 16,
+                      color: "#fff",
+                      background: "linear-gradient(135deg,#ff7a18,#ffb347)",
+                      boxShadow: "0 12px 28px rgba(255,122,24,0.22)",
+                    }}
+                    bodyStyle={{ height: "100%" }}
+                  >
+                    <Tag color="red">HOT</Tag>
+                    <Title level={5} style={{ color: "#fff", marginTop: 12 }}>
+                      {discount.title}
+                    </Title>
+                    <Text style={{ color: "#fff" }}>
+                      Mã {discount.code} · Đơn từ{" "}
+                      {Number(discount.minOrderValue || 0).toLocaleString("vi-VN")} đ
+                    </Text>
+                    <br />
+                    <Text style={{ color: "#fff" }}>
+                      {discount.type === "PERCENT"
+                        ? `Giảm ${discount.value}%`
+                        : `Giảm ${Number(discount.value).toLocaleString("vi-VN")} đ`}
+                    </Text>
+                    <br />
+                    <Text style={{ color: "rgba(255,255,255,0.86)" }}>
+                      HSD:{" "}
+                      {discount.expiredAt
+                        ? new Date(discount.expiredAt).toLocaleDateString("vi-VN")
+                        : "Không giới hạn"}
+                    </Text>
+
+                    <div style={{ marginTop: 14 }}>
+                      <Progress
+                        percent={percent}
+                        showInfo={false}
+                        strokeColor="#fff"
+                        trailColor="rgba(255,255,255,0.35)"
+                      />
+                      <Text style={{ color: "#fff", fontSize: 13 }}>
+                        {remaining === null ? "Không giới hạn lượt dùng" : `Còn ${remaining} lượt`}
+                      </Text>
+                    </div>
+
+                    {isClaimed ? (
+                      <Tag color="green" style={{ marginTop: 14 }}>
+                        Đã nhận
+                      </Tag>
+                    ) : (
+                    <Button
+                      type="primary"
+                      ghost
+                      style={{ marginTop: 14 }}
+                      onClick={() => handleClaim(discount._id)}
+                    >
+                      Nhận voucher
+                      </Button>
+                    )}
+                  </Card>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
 
       {/* CATEGORY */}
       <div

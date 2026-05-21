@@ -297,8 +297,15 @@ const OrdersPage = () => {
 
                     <Text>
                       Giá trị:{" "}
-                      {Number(order.totalPrice).toLocaleString("vi-VN")} ₫
+                      {Number(order.finalPrice || order.totalPrice).toLocaleString("vi-VN")} ₫
                     </Text>
+
+                    {order.discountAmount > 0 ? (
+                      <Text type="secondary">
+                        Voucher {order.discountCode}: -{" "}
+                        {Number(order.discountAmount).toLocaleString("vi-VN")} ₫
+                      </Text>
+                    ) : null}
 
                     <Text>
                       Ngày: {new Date(order.createdAt).toLocaleString("vi-VN")}
