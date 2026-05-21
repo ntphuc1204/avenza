@@ -106,7 +106,13 @@ const CartPage = () => {
       body: { productId, quantity },
     });
 
-    setCart(res?.data ?? res);
+    if (res?.data) {
+      // reload lại cart chuẩn từ DB
+      await loadCart();
+
+      // update badge realtime
+      window.dispatchEvent(new Event("cartUpdated"));
+    }
   };
 
   const removeItem = async (productId: string) => {
@@ -118,7 +124,11 @@ const CartPage = () => {
       },
     });
 
-    setCart(res?.data ?? res);
+    if (res?.data) {
+      await loadCart();
+
+      window.dispatchEvent(new Event("cartUpdated"));
+    }
   };
 
   const clearCart = async () => {
@@ -171,10 +181,17 @@ const CartPage = () => {
         body: {
           orderData: {
             userId: userProfile?._id,
+
             products: cart.items.map((item: any) => ({
               productId: item.productId,
+              name: item.name,
+              image: item.image,
+              price: item.price,
               quantity: item.quantity,
             })),
+
+            totalPrice: cart.totalPrice,
+
             shippingAddress: {
               recipientName: values.recipientName,
               phone: values.phone,

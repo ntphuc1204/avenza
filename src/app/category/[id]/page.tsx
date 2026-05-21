@@ -65,6 +65,7 @@ const CategoryPage = () => {
           padding: 24,
           borderRadius: 20,
           marginBottom: 24,
+          boxShadow: "0 10px 35px rgba(0,0,0,0.08)",
         }}
       >
         <Title level={3}>{category?.name || "Danh mục"}</Title>

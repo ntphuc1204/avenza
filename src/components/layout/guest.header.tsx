@@ -9,11 +9,26 @@ import {
   LogoutOutlined,
   MenuOutlined,
 } from "@ant-design/icons";
-import { Badge, Button, Drawer, Input, Layout, Space, Typography, Grid } from "antd";
+
+import {
+  Badge,
+  Button,
+  Drawer,
+  Input,
+  Layout,
+  Space,
+  Typography,
+  Grid,
+} from "antd";
+
 import Link from "next/link";
+
 import { signOut, useSession } from "next-auth/react";
+
 import { useRouter, useSearchParams } from "next/navigation";
+
 import { useEffect, useState } from "react";
+
 import { sendRequest } from "@/utils/api";
 
 const { Header } = Layout;
@@ -30,14 +45,20 @@ const GuestHeader = () => {
   const screens = useBreakpoint();
 
   const [search, setSearch] = useState("");
+
   const [notificationCount, setNotificationCount] = useState(0);
+
   const [openDrawer, setOpenDrawer] = useState(false);
+
+  const [cartCount, setCartCount] = useState(0);
 
   const NOTIFICATIONS_LAST_VIEWED_KEY = "notificationsLastViewedAt";
 
   const getLastViewedAt = () => {
     if (typeof window === "undefined") return 0;
+
     const saved = window.localStorage.getItem(NOTIFICATIONS_LAST_VIEWED_KEY);
+
     return saved ? Number(saved) : 0;
   };
 
@@ -60,26 +81,71 @@ const GuestHeader = () => {
         headers: {
           Authorization: `Bearer ${session.user.access_token}`,
         },
-        queryParams: { current: 1, pageSize: 20 },
+        queryParams: {
+          current: 1,
+          pageSize: 20,
+        },
       });
 
       if (res?.data?.results) {
         const count = res.data.results.filter((order: any) => {
-          const updatedAt = new Date(order.updatedAt || order.createdAt).getTime();
+          const updatedAt = new Date(
+            order.updatedAt || order.createdAt,
+          ).getTime();
+
           return updatedAt > lastViewedAt;
         }).length;
+
         setNotificationCount(count);
       }
+    };
+
+    const loadCartCount = async () => {
+      if (!session?.user?.access_token) {
+        setCartCount(0);
+        return;
+      }
+
+      const res = await sendRequest<IBackendRes<any>>({
+        url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/cart`,
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${session.user.access_token}`,
+        },
+      });
+
+      const items = res?.data?.items || [];
+
+      const total = items.reduce(
+        (sum: number, item: any) => sum + item.quantity,
+        0,
+      );
+
+      setCartCount(total);
     };
 
     const handleNotificationsRead = () => {
       loadNotificationCount();
     };
 
+    const handleCartUpdated = () => {
+      loadCartCount();
+    };
+
+    // RUN
     loadNotificationCount();
+
+    loadCartCount();
+
+    // EVENTS
     window.addEventListener("notificationsRead", handleNotificationsRead);
+
+    window.addEventListener("cartUpdated", handleCartUpdated);
+
     return () => {
       window.removeEventListener("notificationsRead", handleNotificationsRead);
+
+      window.removeEventListener("cartUpdated", handleCartUpdated);
     };
   }, [session]);
 
@@ -95,27 +161,36 @@ const GuestHeader = () => {
         <Button
           type="text"
           icon={<HomeOutlined />}
-          style={{ width: screens.md ? "auto" : "100%" }}
+          style={{
+            width: screens.md ? "auto" : "100%",
+          }}
         >
           Trang chủ
         </Button>
       </Link>
 
-      <Link href="/cart">
-        <Button
-          type="text"
-          icon={<ShoppingCartOutlined />}
-          style={{ width: screens.md ? "auto" : "100%" }}
-        >
-          Giỏ hàng
-        </Button>
+      {/* CART */}
+      <Link href="/cart" onClick={() => setCartCount(0)}>
+        <Badge count={cartCount} size="small" offset={[6, -4]}>
+          <Button
+            type="text"
+            icon={<ShoppingCartOutlined />}
+            style={{
+              width: screens.md ? "auto" : "100%",
+            }}
+          >
+            Giỏ hàng
+          </Button>
+        </Badge>
       </Link>
 
       <Link href="/orders">
         <Button
           type="text"
           icon={<AppstoreOutlined />}
-          style={{ width: screens.md ? "auto" : "100%" }}
+          style={{
+            width: screens.md ? "auto" : "100%",
+          }}
         >
           Đơn hàng
         </Button>
@@ -126,7 +201,9 @@ const GuestHeader = () => {
           <Button
             type="text"
             icon={<AppstoreOutlined />}
-            style={{ width: screens.md ? "auto" : "100%" }}
+            style={{
+              width: screens.md ? "auto" : "100%",
+            }}
           >
             Thông báo
           </Button>
@@ -138,7 +215,9 @@ const GuestHeader = () => {
           <Button
             type="text"
             icon={<UserOutlined />}
-            style={{ width: screens.md ? "auto" : "100%" }}
+            style={{
+              width: screens.md ? "auto" : "100%",
+            }}
           >
             Hồ sơ
           </Button>
@@ -149,7 +228,9 @@ const GuestHeader = () => {
         <Button
           type="text"
           icon={<RobotOutlined />}
-          style={{ width: screens.md ? "auto" : "100%" }}
+          style={{
+            width: screens.md ? "auto" : "100%",
+          }}
         >
           AI
         </Button>
@@ -160,7 +241,9 @@ const GuestHeader = () => {
           <Button
             type="primary"
             icon={<AppstoreOutlined />}
-            style={{ width: screens.md ? "auto" : "100%" }}
+            style={{
+              width: screens.md ? "auto" : "100%",
+            }}
           >
             Admin
           </Button>
@@ -173,7 +256,9 @@ const GuestHeader = () => {
           danger
           icon={<LogoutOutlined />}
           onClick={() => signOut({ callbackUrl: "/" })}
-          style={{ width: screens.md ? "auto" : "100%" }}
+          style={{
+            width: screens.md ? "auto" : "100%",
+          }}
         >
           Thoát
         </Button>
@@ -182,7 +267,9 @@ const GuestHeader = () => {
           <Button
             type="primary"
             icon={<UserOutlined />}
-            style={{ width: screens.md ? "auto" : "100%" }}
+            style={{
+              width: screens.md ? "auto" : "100%",
+            }}
           >
             Đăng nhập
           </Button>

@@ -90,23 +90,34 @@ const ProductDetailPage = () => {
       return;
     }
 
-    const res = await sendRequest<IBackendRes<any>>({
-      url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/cart/add`,
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${session.user.access_token}`,
-      },
-      body: {
-        productId,
-        quantity,
-      },
-    });
+    try {
+      const res = await sendRequest<IBackendRes<any>>({
+        url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/cart/add`,
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.user.access_token}`,
+        },
+        body: {
+          productId,
+          quantity,
+        },
+      });
 
-    if (res?.data) {
-      notification.success({ message: "Đã thêm sản phẩm vào giỏ hàng" });
-    } else {
+      if (res?.data) {
+        notification.success({
+          message: "Đã thêm sản phẩm vào giỏ hàng",
+        });
+
+        // realtime badge cart
+        window.dispatchEvent(new Event("cartUpdated"));
+      } else {
+        notification.error({
+          message: res?.message || "Thêm vào giỏ hàng thất bại",
+        });
+      }
+    } catch (error) {
       notification.error({
-        message: res?.message || "Thêm vào giỏ hàng thất bại",
+        message: "Có lỗi xảy ra",
       });
     }
   };

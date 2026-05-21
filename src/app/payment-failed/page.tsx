@@ -19,6 +19,8 @@ const PaymentFailedPage = () => {
         alignItems: "center",
         background: "#f5f5f5",
         padding: 20,
+        overflow: "hidden",
+        boxShadow: "0 10px 35px rgba(0,0,0,0.08)",
       }}
     >
       <Card

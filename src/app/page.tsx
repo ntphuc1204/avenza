@@ -7,19 +7,39 @@ import {
   Pagination,
   Row,
   Skeleton,
-  Space,
   Tag,
   Typography,
 } from "antd";
+
 import { useEffect, useState } from "react";
+
 import GuestLayout from "@/components/layout/guest.layout";
+
 import ProductCard from "@/components/guest/product.card";
+
 import { sendRequest } from "@/utils/api";
-import Link from "next/link";
+
 import { useSearchParams } from "next/navigation";
+
 import { useSession } from "next-auth/react";
 
+// SWIPER
+import { Swiper, SwiperSlide } from "swiper/react";
+
+import { Autoplay, Pagination as SwiperPagination } from "swiper/modules";
+
+import "swiper/css";
+import "swiper/css/pagination";
+
 const { Title, Text } = Typography;
+
+const cardStyle = {
+  background: "#ffffff",
+  padding: 24,
+  borderRadius: 20,
+  boxShadow: "0 8px 30px rgba(0,0,0,0.06)",
+  border: "1px solid rgba(0,0,0,0.04)",
+};
 
 const HomePage = () => {
   const { data: session } = useSession();
@@ -27,15 +47,19 @@ const HomePage = () => {
   const searchParams = useSearchParams();
 
   const [categories, setCategories] = useState<any[]>([]);
+
   const [products, setProducts] = useState<any[]>([]);
+
   const [topProducts, setTopProducts] = useState<any[]>([]);
 
   const [loading, setLoading] = useState(true);
+
   const [categoryLoading, setCategoryLoading] = useState(true);
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const [allProducts, setAllProducts] = useState<any[]>([]);
+
   const [allLoading, setAllLoading] = useState(true);
 
   const [allCurrent, setAllCurrent] = useState(1);
@@ -148,71 +172,80 @@ const HomePage = () => {
     loadAllProducts(1);
   }, [search, selectedCategory]);
 
+  useEffect(() => {
+    setAllCurrent(1);
+  }, [selectedCategory, search]);
+
   return (
     <GuestLayout>
+      {/* BANNER */}
       <div
         style={{
           marginBottom: 24,
-          background: "#ffffff",
-          padding: 24,
           borderRadius: 20,
+          overflow: "hidden",
+          boxShadow: "0 10px 35px rgba(0,0,0,0.08)",
         }}
       >
-        <Row gutter={[24, 24]} align="middle">
-          <Col xs={24} lg={16}>
-            <Title level={2} style={{ marginBottom: 12 }}>
-              Chào mừng đến với Avenza
-            </Title>
-
-            <Text type="secondary">
-              Mua sắm thiết bị giáo dục, so sánh sản phẩm, đặt hàng nhanh và
-              nhận tư vấn AI ngay trong tầm tay.
-            </Text>
-          </Col>
-
-          <Col xs={24} lg={8}>
-            <div
+        <Swiper
+          modules={[Autoplay, SwiperPagination]}
+          autoplay={{
+            delay: 3000,
+            disableOnInteraction: false,
+          }}
+          pagination={{
+            clickable: true,
+          }}
+          loop
+        >
+          <SwiperSlide>
+            <img
+              src="/banner1.jpg"
+              alt="banner1"
               style={{
-                background: "#f3f4f6",
-                borderRadius: 16,
-                padding: 24,
+                width: "100%",
+                aspectRatio: "16 / 6",
+                objectFit: "cover",
+                display: "block",
               }}
-            >
-              <Title level={4}>Bắt đầu ngay</Title>
+            />
+          </SwiperSlide>
 
-              <Space direction="vertical" style={{ width: "100%" }}>
-                <Button
-                  type="primary"
-                  block
-                  onClick={() =>
-                    document.getElementById("product-section")?.scrollIntoView({
-                      behavior: "smooth",
-                    })
-                  }
-                >
-                  Xem sản phẩm nổi bật
-                </Button>
+          <SwiperSlide>
+            <img
+              src="/banner2.jpg"
+              alt="banner2"
+              style={{
+                width: "100%",
+                aspectRatio: "16 / 6",
+                objectFit: "cover",
+                display: "block",
+              }}
+            />
+          </SwiperSlide>
 
-                {session?.user?.role === "ADMIN" && (
-                  <Link href="/dashboard">
-                    <Button type="default" block>
-                      Vào giao diện Admin
-                    </Button>
-                  </Link>
-                )}
-
-                {!session?.user && (
-                  <Link href="/auth/login">
-                    <Button block>Đăng nhập để đặt hàng</Button>
-                  </Link>
-                )}
-              </Space>
-            </div>
-          </Col>
-        </Row>
+          <SwiperSlide>
+            <img
+              src="/banner3.jpg"
+              alt="banner3"
+              style={{
+                width: "100%",
+                aspectRatio: "16 / 6",
+                objectFit: "cover",
+                display: "block",
+              }}
+            />
+          </SwiperSlide>
+        </Swiper>
       </div>
 
-      <div style={{ marginBottom: 24 }}>
+      {/* CATEGORY */}
+      <div
+        style={{
+          ...cardStyle,
+          marginBottom: 24,
+        }}
+      >
         <Title level={4}>Danh mục nổi bật</Title>
 
         <div
@@ -260,7 +293,14 @@ const HomePage = () => {
         </div>
       </div>
 
-      <div style={{ marginBottom: 24 }} id="product-section">
+      {/* PRODUCTS */}
+      <div
+        style={{
+          ...cardStyle,
+          marginBottom: 24,
+        }}
+        id="product-section"
+      >
         <Row justify="space-between" align="middle">
           <Col>
             <Title level={4}>Sản phẩm</Title>
@@ -269,7 +309,7 @@ const HomePage = () => {
           <Col>
             <Text type="secondary">
               {products.length} sản phẩm
-              {search ? ` phù hợp với “${search}”` : ""}
+              {search ? ` phù hợp với "${search}"` : ""}
             </Text>
           </Col>
         </Row>
@@ -295,13 +335,8 @@ const HomePage = () => {
         </Row>
       </div>
 
-      <div
-        style={{
-          background: "#ffffff",
-          padding: 24,
-          borderRadius: 20,
-        }}
-      >
+      {/* TOP SELLING */}
+      <div style={cardStyle}>
         <Row justify="space-between" align="middle">
           <Col>
             <Title level={4}>Sản phẩm bán chạy</Title>
@@ -309,12 +344,6 @@ const HomePage = () => {
             <Text type="secondary">
               Các sản phẩm được khách hàng mua nhiều nhất trong cửa hàng.
             </Text>
-          </Col>
-
-          <Col>
-            <Link href="/">
-              <Button type="link">Xem thêm</Button>
-            </Link>
           </Col>
         </Row>
 
@@ -333,12 +362,11 @@ const HomePage = () => {
         </Row>
       </div>
 
+      {/* ALL PRODUCTS */}
       <div
         style={{
+          ...cardStyle,
           marginTop: 24,
-          background: "#ffffff",
-          padding: 24,
-          borderRadius: 20,
         }}
       >
         <Row justify="space-between" align="middle">

@@ -19,6 +19,8 @@ const PaymentSuccessPage = () => {
         alignItems: "center",
         background: "#f5f5f5",
         padding: 20,
+        overflow: "hidden",
+        boxShadow: "0 10px 35px rgba(0,0,0,0.08)",
       }}
     >
       <Card
@@ -39,18 +41,11 @@ const PaymentSuccessPage = () => {
           title="Thanh toán thành công"
           subTitle={`Mã đơn hàng: ${orderId || "N/A"}`}
           extra={[
-            <Button
-              type="primary"
-              key="home"
-              onClick={() => router.push("/")}
-            >
+            <Button type="primary" key="home" onClick={() => router.push("/")}>
               Về trang chủ
             </Button>,
 
-            <Button
-              key="orders"
-              onClick={() => router.push("/orders")}
-            >
+            <Button key="orders" onClick={() => router.push("/orders")}>
               Xem đơn hàng
             </Button>,
           ]}

@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  Badge,
-  Button,
-  Card,
-  Empty,
-  List,
-  Space,
-  Typography,
-} from "antd";
+import { Badge, Button, Card, Empty, List, Space, Typography } from "antd";
 
 const NOTIFICATIONS_LAST_VIEWED_KEY = "notificationsLastViewedAt";
 import { useEffect, useMemo, useState } from "react";
@@ -47,7 +39,10 @@ const NotificationsPage = () => {
           const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
           return timestamp >= oneWeekAgo;
         })
-        .sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+        .sort(
+          (a: any, b: any) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        );
 
       setNotifications(recentlyUpdated);
       if (typeof window !== "undefined") {
@@ -80,10 +75,14 @@ const NotificationsPage = () => {
             padding: 40,
             background: "#ffffff",
             borderRadius: 20,
+            overflow: "hidden",
+            boxShadow: "0 10px 35px rgba(0,0,0,0.08)",
           }}
         >
           <Title level={3}>Đăng nhập để xem thông báo đơn hàng</Title>
-          <Button type="primary" onClick={() => router.push("/auth/login")}>Đăng nhập ngay</Button>
+          <Button type="primary" onClick={() => router.push("/auth/login")}>
+            Đăng nhập ngay
+          </Button>
         </div>
       </GuestLayout>
     );
@@ -108,7 +107,7 @@ const NotificationsPage = () => {
               <List.Item
                 key={item._id}
                 actions={[
-                  <Button type="link" onClick={() => router.push('/orders')}>
+                  <Button type="link" onClick={() => router.push("/orders")}>
                     Xem chi tiết
                   </Button>,
                 ]}
@@ -133,23 +132,37 @@ const NotificationsPage = () => {
                           item.orderStatus === "SUCCESS"
                             ? "success"
                             : item.orderStatus === "PENDING"
-                            ? "processing"
-                            : item.orderStatus === "error"
+                              ? "processing"
+                              : "error"
                         }
                         text={item.orderStatus}
                       />
                     </div>
                   }
                   description={
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 16,
+                        flexWrap: "wrap",
+                      }}
+                    >
                       <Text type="secondary">{item.description}</Text>
                       <Text type="secondary">
-                        Tổng: {Number(item.totalPrice).toLocaleString("vi-VN")} ₫
+                        Tổng: {Number(item.totalPrice).toLocaleString("vi-VN")}{" "}
+                        ₫
                       </Text>
                     </div>
                   }
                 />
-                <Space style={{ width: "100%", justifyContent: "space-between", flexWrap: "wrap" }}>
+                <Space
+                  style={{
+                    width: "100%",
+                    justifyContent: "space-between",
+                    flexWrap: "wrap",
+                  }}
+                >
                   <Text type="secondary">
                     Cập nhật: {new Date(item.updatedAt).toLocaleString("vi-VN")}
                   </Text>

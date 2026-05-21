@@ -6,6 +6,13 @@
 /* =========================
    DASHBOARD LAYOUT
 ========================= */
+html,
+body {
+  margin: 0 !important;
+  padding: 0 !important;
+  color: #000;
+  
+}
 .admin-layout{
   display: flex;
 }

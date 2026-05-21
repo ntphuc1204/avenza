@@ -27,25 +27,33 @@ const ProductCard = ({ product, onAddToCart }: IProductCardProps) => {
 
     setLoading(true);
 
-    const res = await sendRequest<IBackendRes<any>>({
-      url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/cart/add`,
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${session.user.access_token}`,
-      },
-      body: {
-        productId: product._id,
-        quantity: 1,
-      },
-    });
+    try {
+      const res = await sendRequest<IBackendRes<any>>({
+        url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/cart/add`,
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.user.access_token}`,
+        },
+        body: {
+          productId: product._id,
+          quantity: 1,
+        },
+      });
 
-    setLoading(false);
+      if (res?.data) {
+        message.success("Đã thêm vào giỏ hàng");
 
-    if (res?.data) {
-      message.success("Đã thêm vào giỏ hàng");
-      onAddToCart?.();
-    } else {
-      message.error(res?.message || "Thêm vào giỏ hàng thất bại");
+        // realtime badge cart
+        window.dispatchEvent(new Event("cartUpdated"));
+
+        onAddToCart?.();
+      } else {
+        message.error(res?.message || "Thêm vào giỏ hàng thất bại");
+      }
+    } catch (error) {
+      message.error("Có lỗi xảy ra");
+    } finally {
+      setLoading(false);
     }
   };
 

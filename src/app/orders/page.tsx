@@ -239,6 +239,8 @@ const OrdersPage = () => {
                   hoverable
                   style={{
                     borderRadius: 20,
+                    overflow: "hidden",
+                    boxShadow: "0 10px 35px rgba(0,0,0,0.08)",
                     opacity: isCancelled ? 0.6 : 1,
                     filter: isCancelled ? "grayscale(20%)" : "none",
                     transition: "0.3s",
