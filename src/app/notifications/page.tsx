@@ -1,8 +1,6 @@
 "use client";
 
 import { Badge, Button, Card, Empty, List, Space, Typography } from "antd";
-
-const NOTIFICATIONS_LAST_VIEWED_KEY = "notificationsLastViewedAt";
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -21,36 +19,31 @@ const NotificationsPage = () => {
     if (!session?.user?.access_token) return;
 
     setLoading(true);
+
     const res = await sendRequest<IBackendRes<any>>({
-      url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/orders`,
+      url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/notifications`,
       method: "GET",
       headers: {
         Authorization: `Bearer ${session.user.access_token}`,
       },
       queryParams: { current: 1, pageSize: 20 },
     });
-    setLoading(false);
 
     if (res?.data?.results) {
-      const recentlyUpdated = res.data.results
-        .filter((order: any) => {
-          const updatedAt = new Date(order.updatedAt || order.createdAt);
-          const timestamp = updatedAt.getTime();
-          const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-          return timestamp >= oneWeekAgo;
-        })
-        .sort(
-          (a: any, b: any) =>
-            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-        );
+      setNotifications(res.data.results);
 
-      setNotifications(recentlyUpdated);
-      if (typeof window !== "undefined") {
-        const now = Date.now();
-        window.localStorage.setItem(NOTIFICATIONS_LAST_VIEWED_KEY, String(now));
-        window.dispatchEvent(new Event("notificationsRead"));
-      }
+      await sendRequest<IBackendRes<any>>({
+        url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/notifications/read-all`,
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${session.user.access_token}`,
+        },
+      });
+
+      window.dispatchEvent(new Event("notificationsRead"));
     }
+
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -58,11 +51,10 @@ const NotificationsPage = () => {
   }, [session]);
 
   const notificationItems = useMemo(() => {
-    return notifications.map((order) => ({
-      ...order,
-      title: `Đơn hàng #${order._id.slice(-6)} cập nhật`,
-      description: `Trạng thái đơn: ${order.orderStatus} · Thanh toán: ${order.paymentStatus}`,
-      updatedAt: order.updatedAt || order.createdAt,
+    return notifications.map((item) => ({
+      ...item,
+      description: item.message,
+      updatedAt: item.updatedAt || item.createdAt,
     }));
   }, [notifications]);
 
@@ -107,7 +99,7 @@ const NotificationsPage = () => {
               <List.Item
                 key={item._id}
                 actions={[
-                  <Button type="link" onClick={() => router.push("/orders")}>
+                  <Button type="link" onClick={() => router.push(item.link || "/orders")}>
                     Xem chi tiết
                   </Button>,
                 ]}
@@ -129,13 +121,13 @@ const NotificationsPage = () => {
                       <Text strong>{item.title}</Text>
                       <Badge
                         status={
-                          item.orderStatus === "SUCCESS"
+                          item.data?.orderStatus === "DELIVERED"
                             ? "success"
-                            : item.orderStatus === "PENDING"
+                            : item.data?.orderStatus === "PENDING"
                               ? "processing"
-                              : "error"
+                              : "default"
                         }
-                        text={item.orderStatus}
+                        text={item.data?.orderStatus || item.type}
                       />
                     </div>
                   }
@@ -150,8 +142,9 @@ const NotificationsPage = () => {
                     >
                       <Text type="secondary">{item.description}</Text>
                       <Text type="secondary">
-                        Tổng: {Number(item.totalPrice).toLocaleString("vi-VN")}{" "}
-                        ₫
+                        Tổng:{" "}
+                        {Number(item.data?.totalPrice || 0).toLocaleString("vi-VN")}{" "}
+                        đ
                       </Text>
                     </div>
                   }

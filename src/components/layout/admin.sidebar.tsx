@@ -6,12 +6,11 @@ import Badge from "antd/es/badge";
 
 import {
   AppstoreOutlined,
+  BellOutlined,
   TeamOutlined,
   ShopOutlined,
   ProfileOutlined,
-  CreditCardOutlined,
   CommentOutlined,
-  ShoppingCartOutlined,
   RobotOutlined,
   TruckOutlined,
   ImportOutlined,
@@ -26,6 +25,8 @@ import type { MenuProps } from "antd";
 import Link from "next/link";
 
 import { io, Socket } from "socket.io-client";
+import { useSession } from "next-auth/react";
+import { sendRequest } from "@/utils/api";
 
 type MenuItem = Required<MenuProps>["items"][number];
 
@@ -34,11 +35,39 @@ const AdminSideBar = () => {
 
   const { collapseMenu } = useContext(AdminContext)!;
 
+  const { data: session } = useSession();
+
   const [notificationCount, setNotificationCount] = useState(0);
 
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
+    const loadUnreadCount = async () => {
+      if (!session?.user?.access_token) return;
+
+      const res = await sendRequest<IBackendRes<{ count: number }>>({
+        url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/notifications/unread-count`,
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${session.user.access_token}`,
+        },
+      });
+
+      setNotificationCount(res?.data?.count ?? 0);
+    };
+
+    loadUnreadCount();
+
+    window.addEventListener("notificationsRead", loadUnreadCount);
+
+    return () => {
+      window.removeEventListener("notificationsRead", loadUnreadCount);
+    };
+  }, [session]);
+
+  useEffect(() => {
+    if (!session?.user?.access_token) return;
+
     const socket = io(
       process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8081",
       {
@@ -53,14 +82,16 @@ const AdminSideBar = () => {
     });
 
     // realtime đơn hàng mới
-    socket.on("new-order", () => {
-      setNotificationCount((prev) => prev + 1);
+    socket.on("notification-created", (item: any) => {
+      if (item.targetRole === "ADMIN" || !item.targetRole) {
+        setNotificationCount((prev) => prev + 1);
+      }
     });
 
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [session]);
 
   const items: MenuItem[] = [
     {
@@ -154,7 +185,7 @@ const AdminSideBar = () => {
             </Link>
           ),
 
-          icon: <ProfileOutlined />,
+          icon: <BellOutlined />,
         },
 
         {

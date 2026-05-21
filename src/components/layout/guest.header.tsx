@@ -2,6 +2,7 @@
 
 import {
   AppstoreOutlined,
+  BellOutlined,
   HomeOutlined,
   RobotOutlined,
   ShoppingCartOutlined,
@@ -27,9 +28,10 @@ import { signOut, useSession } from "next-auth/react";
 
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { sendRequest } from "@/utils/api";
+import { io, Socket } from "socket.io-client";
 
 const { Header } = Layout;
 const { Text } = Typography;
@@ -52,15 +54,7 @@ const GuestHeader = () => {
 
   const [cartCount, setCartCount] = useState(0);
 
-  const NOTIFICATIONS_LAST_VIEWED_KEY = "notificationsLastViewedAt";
-
-  const getLastViewedAt = () => {
-    if (typeof window === "undefined") return 0;
-
-    const saved = window.localStorage.getItem(NOTIFICATIONS_LAST_VIEWED_KEY);
-
-    return saved ? Number(saved) : 0;
-  };
+  const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
     setSearch(searchParams?.get("search") ?? "");
@@ -73,31 +67,15 @@ const GuestHeader = () => {
         return;
       }
 
-      const lastViewedAt = getLastViewedAt();
-
-      const res = await sendRequest<IBackendRes<any>>({
-        url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/orders`,
+      const res = await sendRequest<IBackendRes<{ count: number }>>({
+        url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/notifications/unread-count`,
         method: "GET",
         headers: {
           Authorization: `Bearer ${session.user.access_token}`,
         },
-        queryParams: {
-          current: 1,
-          pageSize: 20,
-        },
       });
 
-      if (res?.data?.results) {
-        const count = res.data.results.filter((order: any) => {
-          const updatedAt = new Date(
-            order.updatedAt || order.createdAt,
-          ).getTime();
-
-          return updatedAt > lastViewedAt;
-        }).length;
-
-        setNotificationCount(count);
-      }
+      setNotificationCount(res?.data?.count ?? 0);
     };
 
     const loadCartCount = async () => {
@@ -146,6 +124,34 @@ const GuestHeader = () => {
       window.removeEventListener("notificationsRead", handleNotificationsRead);
 
       window.removeEventListener("cartUpdated", handleCartUpdated);
+    };
+  }, [session]);
+
+  useEffect(() => {
+    if (!session?.user?.access_token) return;
+
+    const socket = io(
+      process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080",
+      {
+        transports: ["websocket"],
+      },
+    );
+
+    socketRef.current = socket;
+
+    socket.on("notification-created", (item: any) => {
+      const isForCurrentUser =
+        item.targetUserId === session.user._id ||
+        item.targetRole === session.user.role ||
+        (!item.targetUserId && !item.targetRole);
+
+      if (isForCurrentUser) {
+        setNotificationCount((prev) => prev + 1);
+      }
+    });
+
+    return () => {
+      socket.disconnect();
     };
   }, [session]);
 
@@ -200,7 +206,7 @@ const GuestHeader = () => {
         <Badge count={notificationCount} size="small" offset={[6, -4]}>
           <Button
             type="text"
-            icon={<AppstoreOutlined />}
+            icon={<BellOutlined />}
             style={{
               width: screens.md ? "auto" : "100%",
             }}
