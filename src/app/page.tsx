@@ -12,6 +12,7 @@ import {
   Tag,
   Typography,
   notification,
+  FloatButton,
 } from "antd";
 
 import { useEffect, useState } from "react";
@@ -182,7 +183,9 @@ const HomePage = () => {
 
   const handleClaim = async (discountId: string) => {
     if (!session?.user?.access_token) {
-      notification.warning({ message: "Vui lòng đăng nhập để nhận voucher" });
+      notification.warning({
+        message: "Vui lòng đăng nhập để nhận voucher",
+      });
       return;
     }
 
@@ -198,9 +201,14 @@ const HomePage = () => {
       setClaimedDiscountIds((prev) =>
         prev.includes(discountId) ? prev : [...prev, discountId],
       );
-      notification.success({ message: "Đã nhận voucher" });
+
+      notification.success({
+        message: "Đã nhận voucher",
+      });
     } else {
-      notification.error({ message: res?.message || "Nhận voucher thất bại" });
+      notification.error({
+        message: res?.message || "Nhận voucher thất bại",
+      });
     }
   };
 
@@ -324,7 +332,10 @@ const HomePage = () => {
           <Row justify="space-between" align="middle">
             <Col>
               <Title level={4}>Voucher nổi bật</Title>
-              <Text type="secondary">Nhận mã ưu đãi và áp dụng khi checkout.</Text>
+
+              <Text type="secondary">
+                Nhận mã ưu đãi và áp dụng khi checkout.
+              </Text>
             </Col>
           </Row>
 
@@ -336,15 +347,16 @@ const HomePage = () => {
               overflowX: "auto",
               overflowY: "hidden",
               paddingBottom: 8,
-              scrollSnapType: "x mandatory",
             }}
           >
             {discounts.map((discount) => {
               const isClaimed = claimedDiscountIds.includes(discount._id);
+
               const remaining =
                 discount.quantity > 0
                   ? Math.max(discount.quantity - discount.used, 0)
                   : null;
+
               const percent =
                 discount.quantity > 0
                   ? Math.round((discount.used / discount.quantity) * 100)
@@ -355,39 +367,65 @@ const HomePage = () => {
                   key={discount._id}
                   style={{
                     flex: "0 0 clamp(280px, 32%, 380px)",
-                    scrollSnapAlign: "start",
                   }}
                 >
                   <Card
                     bordered={false}
                     style={{
+                      height: "100%",
                       minHeight: 220,
                       borderRadius: 16,
                       color: "#fff",
                       background: "linear-gradient(135deg,#ff7a18,#ffb347)",
                       boxShadow: "0 12px 28px rgba(255,122,24,0.22)",
                     }}
-                    bodyStyle={{ height: "100%" }}
                   >
                     <Tag color="red">HOT</Tag>
-                    <Title level={5} style={{ color: "#fff", marginTop: 12 }}>
+
+                    <Title
+                      level={5}
+                      style={{
+                        color: "#fff",
+                        marginTop: 12,
+                      }}
+                    >
                       {discount.title}
                     </Title>
-                    <Text style={{ color: "#fff" }}>
-                      Mã {discount.code} · Đơn từ{" "}
-                      {Number(discount.minOrderValue || 0).toLocaleString("vi-VN")} đ
-                    </Text>
+
+                    <Text style={{ color: "#fff" }}>Mã {discount.code}</Text>
+
                     <br />
+
+                    <Text style={{ color: "#fff" }}>
+                      Đơn từ{" "}
+                      {Number(discount.minOrderValue || 0).toLocaleString(
+                        "vi-VN",
+                      )}{" "}
+                      đ
+                    </Text>
+
+                    <br />
+
                     <Text style={{ color: "#fff" }}>
                       {discount.type === "PERCENT"
                         ? `Giảm ${discount.value}%`
-                        : `Giảm ${Number(discount.value).toLocaleString("vi-VN")} đ`}
+                        : `Giảm ${Number(discount.value).toLocaleString(
+                            "vi-VN",
+                          )} đ`}
                     </Text>
+
                     <br />
-                    <Text style={{ color: "rgba(255,255,255,0.86)" }}>
+
+                    <Text
+                      style={{
+                        color: "rgba(255,255,255,0.86)",
+                      }}
+                    >
                       HSD:{" "}
                       {discount.expiredAt
-                        ? new Date(discount.expiredAt).toLocaleDateString("vi-VN")
+                        ? new Date(discount.expiredAt).toLocaleDateString(
+                            "vi-VN",
+                          )
                         : "Không giới hạn"}
                     </Text>
 
@@ -398,23 +436,38 @@ const HomePage = () => {
                         strokeColor="#fff"
                         trailColor="rgba(255,255,255,0.35)"
                       />
-                      <Text style={{ color: "#fff", fontSize: 13 }}>
-                        {remaining === null ? "Không giới hạn lượt dùng" : `Còn ${remaining} lượt`}
+
+                      <Text
+                        style={{
+                          color: "#fff",
+                          fontSize: 13,
+                        }}
+                      >
+                        {remaining === null
+                          ? "Không giới hạn lượt dùng"
+                          : `Còn ${remaining} lượt`}
                       </Text>
                     </div>
 
                     {isClaimed ? (
-                      <Tag color="green" style={{ marginTop: 14 }}>
+                      <Tag
+                        color="green"
+                        style={{
+                          marginTop: 14,
+                        }}
+                      >
                         Đã nhận
                       </Tag>
                     ) : (
-                    <Button
-                      type="primary"
-                      ghost
-                      style={{ marginTop: 14 }}
-                      onClick={() => handleClaim(discount._id)}
-                    >
-                      Nhận voucher
+                      <Button
+                        type="primary"
+                        ghost
+                        style={{
+                          marginTop: 14,
+                        }}
+                        onClick={() => handleClaim(discount._id)}
+                      >
+                        Nhận voucher
                       </Button>
                     )}
                   </Card>
@@ -485,7 +538,6 @@ const HomePage = () => {
           ...cardStyle,
           marginBottom: 24,
         }}
-        id="product-section"
       >
         <Row justify="space-between" align="middle">
           <Col>
@@ -493,10 +545,7 @@ const HomePage = () => {
           </Col>
 
           <Col>
-            <Text type="secondary">
-              {products.length} sản phẩm
-              {search ? ` phù hợp với "${search}"` : ""}
-            </Text>
+            <Text type="secondary">{products.length} sản phẩm</Text>
           </Col>
         </Row>
 
@@ -528,7 +577,7 @@ const HomePage = () => {
             <Title level={4}>Sản phẩm bán chạy</Title>
 
             <Text type="secondary">
-              Các sản phẩm được khách hàng mua nhiều nhất trong cửa hàng.
+              Các sản phẩm được khách hàng mua nhiều nhất.
             </Text>
           </Col>
         </Row>
@@ -607,6 +656,15 @@ const HomePage = () => {
           </div>
         )}
       </div>
+
+      {/* BACK TO TOP */}
+      <FloatButton.BackTop
+        visibilityHeight={300}
+        style={{
+          right: 24,
+          bottom: 24,
+        }}
+      />
     </GuestLayout>
   );
 };

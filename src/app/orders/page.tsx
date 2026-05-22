@@ -238,6 +238,7 @@ const OrdersPage = () => {
                 <Card
                   hoverable
                   style={{
+                    height: "100%",
                     borderRadius: 20,
                     overflow: "hidden",
                     boxShadow: "0 10px 35px rgba(0,0,0,0.08)",
@@ -297,7 +298,10 @@ const OrdersPage = () => {
 
                     <Text>
                       Giá trị:{" "}
-                      {Number(order.finalPrice || order.totalPrice).toLocaleString("vi-VN")} ₫
+                      {Number(
+                        order.finalPrice || order.totalPrice,
+                      ).toLocaleString("vi-VN")}{" "}
+                      ₫
                     </Text>
 
                     {order.discountAmount > 0 ? (

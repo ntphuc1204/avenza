@@ -15,31 +15,47 @@ import {
   Typography,
   notification,
 } from "antd";
+
 import { useEffect, useState } from "react";
+
 import { useParams, useRouter } from "next/navigation";
+
 import GuestLayout from "@/components/layout/guest.layout";
+
 import ProductCard from "@/components/guest/product.card";
+
 import ProductReviews from "@/components/guest/product.reviews";
+
 import { sendRequest } from "@/utils/api";
+
 import Link from "next/link";
+
 import { useSession } from "next-auth/react";
 
 const { Title, Text, Paragraph } = Typography;
 
 const ProductDetailPage = () => {
   const params = useParams();
+
   const router = useRouter();
+
   const { data: session } = useSession();
+
   const productId = params?.id as string;
 
   const [product, setProduct] = useState<any>(null);
+
   const [related, setRelated] = useState<any[]>([]);
+
   const [loading, setLoading] = useState(true);
+
   const [error, setError] = useState<string | null>(null);
+
   const [quantity, setQuantity] = useState(1);
 
   const loadProduct = async () => {
     setLoading(true);
+
     setError(null);
 
     try {
@@ -52,10 +68,12 @@ const ProductDetailPage = () => {
         setProduct(res.data);
       } else {
         setProduct(null);
+
         setError(res?.message || "Không tìm thấy sản phẩm");
       }
     } catch (err) {
       setProduct(null);
+
       setError("Lỗi khi tải sản phẩm");
     } finally {
       setLoading(false);
@@ -87,6 +105,7 @@ const ProductDetailPage = () => {
   const addToCart = async () => {
     if (!session?.user?.access_token) {
       router.push("/auth/login");
+
       return;
     }
 
@@ -108,7 +127,6 @@ const ProductDetailPage = () => {
           message: "Đã thêm sản phẩm vào giỏ hàng",
         });
 
-        // realtime badge cart
         window.dispatchEvent(new Event("cartUpdated"));
       } else {
         notification.error({
@@ -121,6 +139,16 @@ const ProductDetailPage = () => {
       });
     }
   };
+
+  // =========================
+  // FIX CATEGORY + IMAGE
+  // =========================
+  const imageUrl =
+    Array.isArray(product?.images) && product.images.length
+      ? product.images[0]
+      : typeof product?.images === "string"
+        ? product.images
+        : "/placeholder.png";
 
   if (!productId) {
     return (
@@ -143,29 +171,37 @@ const ProductDetailPage = () => {
       ) : error || !product ? (
         <Empty description={error || "Sản phẩm không tồn tại"} />
       ) : (
-        <Row gutter={[16, 16]}>
+        <Row gutter={[24, 24]}>
           {/* LEFT IMAGE */}
           <Col xs={24} md={12}>
             <Card
-              style={{ borderRadius: 16 }}
-              styles={{ body: { padding: 8 } }}
+              style={{
+                borderRadius: 20,
+                boxShadow: "0 8px 28px rgba(0,0,0,0.06)",
+              }}
+              styles={{
+                body: {
+                  padding: 12,
+                },
+              }}
             >
               <div
                 style={{
                   background: "#fafafa",
-                  padding: 12,
-                  minHeight: 280,
+                  padding: 20,
+                  minHeight: 420,
                   display: "grid",
                   placeItems: "center",
+                  borderRadius: 16,
                 }}
               >
                 <Image
-                  src={product.images?.[0] || "/placeholder.png"}
+                  src={imageUrl}
                   alt={product.name}
+                  preview
                   style={{
                     width: "100%",
                     maxWidth: 420,
-                    height: "auto",
                     objectFit: "contain",
                   }}
                 />
@@ -175,87 +211,175 @@ const ProductDetailPage = () => {
 
           {/* RIGHT INFO */}
           <Col xs={24} md={12}>
-            <div
+            <Card
               style={{
-                background: "#fff",
-                padding: 16,
-                borderRadius: 16,
+                borderRadius: 20,
+                boxShadow: "0 8px 28px rgba(0,0,0,0.06)",
+              }}
+              styles={{
+                body: {
+                  padding: 24,
+                },
               }}
             >
-              <Title level={3} style={{ fontSize: 20, marginBottom: 8 }}>
-                {product.name}
-              </Title>
+              <Space
+                direction="vertical"
+                size={16}
+                style={{
+                  width: "100%",
+                }}
+              >
+                <Title
+                  level={2}
+                  style={{
+                    margin: 0,
+                    fontSize: 28,
+                  }}
+                >
+                  {product.name}
+                </Title>
 
-              <Space direction="vertical" style={{ width: "100%" }} size={8}>
-                <Text type="secondary">
-                  {product.categoryId?.name || "Danh mục không xác định"}
+                {/* FIX CATEGORY */}
+                <Text
+                  type="secondary"
+                  style={{
+                    fontSize: 15,
+                  }}
+                >
+                  {product.categoryId?.name || "Danh mục chung"}
                 </Text>
 
-                <Rate allowHalf disabled value={Number(product.rating) || 0} />
+                {/* FIX RATING */}
+                <Space align="center">
+                  <Rate
+                    allowHalf
+                    disabled
+                    value={Number(product.rating) || 0}
+                  />
 
-                <Text style={{ fontSize: 24, color: "#1677ff" }}>
+                  <Text strong>({Number(product.rating || 0).toFixed(1)})</Text>
+                </Space>
+
+                {/* PRICE */}
+                <Text
+                  strong
+                  style={{
+                    fontSize: 32,
+                    color: "#1677ff",
+                  }}
+                >
                   {Number(product.price).toLocaleString("vi-VN")} ₫
                 </Text>
 
-                <Text type={product.stock > 0 ? "success" : "danger"}>
+                {/* STOCK */}
+                <Text
+                  type={product.stock > 0 ? "success" : "danger"}
+                  style={{
+                    fontSize: 15,
+                  }}
+                >
                   {product.stock > 0
                     ? `Còn ${product.stock} sản phẩm`
                     : "Hết hàng"}
                 </Text>
 
-                <Paragraph style={{ fontSize: 13 }}>
+                {/* DESCRIPTION */}
+                <Paragraph
+                  style={{
+                    fontSize: 14,
+                    lineHeight: 1.8,
+                    marginBottom: 0,
+                  }}
+                >
                   {product.description ||
                     "Không có mô tả chi tiết cho sản phẩm này."}
                 </Paragraph>
 
+                <Divider
+                  style={{
+                    margin: "4px 0",
+                  }}
+                />
+
                 {/* QUANTITY */}
                 <Space
-                  wrap
                   style={{
                     width: "100%",
                     justifyContent: "space-between",
                   }}
                 >
-                  <Text>Số lượng:</Text>
+                  <Text strong>Số lượng:</Text>
+
                   <InputNumber
                     min={1}
                     max={product.stock || 1}
                     value={quantity}
                     onChange={(value) => setQuantity(value || 1)}
-                    style={{ width: 100 }}
+                    style={{
+                      width: 120,
+                    }}
                   />
                 </Space>
 
                 {/* BUTTONS */}
-                <Space direction="vertical" style={{ width: "100%" }} size={8}>
+                <Space
+                  direction="vertical"
+                  size={12}
+                  style={{
+                    width: "100%",
+                  }}
+                >
                   <Button
                     type="primary"
+                    size="large"
                     block
                     onClick={addToCart}
                     disabled={product.stock <= 0}
+                    style={{
+                      height: 48,
+                      borderRadius: 12,
+                      fontWeight: 600,
+                    }}
                   >
                     Thêm vào giỏ hàng
                   </Button>
 
-                  <Button block onClick={() => router.push("/cart")}>
+                  <Button
+                    size="large"
+                    block
+                    onClick={() => router.push("/cart")}
+                    style={{
+                      height: 48,
+                      borderRadius: 12,
+                    }}
+                  >
                     Xem giỏ hàng
                   </Button>
                 </Space>
               </Space>
-            </div>
+            </Card>
           </Col>
 
           {/* REVIEWS */}
           <Col span={24}>
             <Divider />
+
             <ProductReviews productId={productId} />
           </Col>
 
           {/* RELATED */}
           <Col span={24}>
-            <Title level={4}>Sản phẩm liên quan</Title>
+            <div
+              style={{
+                marginBottom: 20,
+              }}
+            >
+              <Title level={4}>Sản phẩm liên quan</Title>
 
-            <Row gutter={[12, 12]}>
+              <Text type="secondary">Các sản phẩm tương tự dành cho bạn</Text>
+            </div>
+
+            <Row gutter={[16, 16]}>
               {related.length ? (
                 related.map((item) => (
                   <Col xs={24} sm={12} md={8} lg={6} key={item._id}>
