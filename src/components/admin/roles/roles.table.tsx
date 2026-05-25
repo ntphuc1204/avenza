@@ -1,6 +1,14 @@
 "use client";
 
-import { Button, Modal, Table, Tag, Popconfirm, Space, notification } from "antd";
+import {
+  Button,
+  Modal,
+  Table,
+  Tag,
+  Popconfirm,
+  Space,
+  notification,
+} from "antd";
 import { useEffect, useState } from "react";
 import { rolesApi } from "@/utils/roles.api";
 import RoleCreateModal from "./roles.create";
@@ -87,7 +95,12 @@ const RolesTable = () => {
         </Button>
       </div>
 
-      <Table rowKey={(r) => r._id} dataSource={roles} columns={columns} loading={loading} />
+      <Table
+        rowKey={(r) => r._id}
+        dataSource={roles}
+        columns={columns}
+        loading={loading}
+      />
 
       <RoleCreateModal
         visible={showCreate}

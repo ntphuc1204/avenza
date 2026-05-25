@@ -1,6 +1,14 @@
 "use client";
 
-import { Modal, Form, Input, InputNumber, Select, Button, notification } from "antd";
+import {
+  Modal,
+  Form,
+  Input,
+  InputNumber,
+  Select,
+  Button,
+  notification,
+} from "antd";
 import { useEffect } from "react";
 import orderDetailsApi from "@/utils/orderDetails.api";
 import { useSession } from "next-auth/react";
@@ -20,9 +28,20 @@ const OrderDetailEditModal = ({ visible, onClose, detail, onSaved }: any) => {
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
-      if (!detail?._id) throw new Error("Missing id");
-      await orderDetailsApi.update(detail._id, values, session?.user?.access_token);
-      notification.success({ message: "Cập nhật chi tiết đơn thành công" });
+      if (detail?._id) {
+        await orderDetailsApi.update(
+          detail._id,
+          values,
+          session?.user?.access_token,
+        );
+        notification.success({ message: "Cập nhật chi tiết đơn thành công" });
+      } else {
+        // create new order detail
+        const payload = { ...values, orderId: detail?.orderId };
+        await orderDetailsApi.create(payload, session?.user?.access_token);
+        notification.success({ message: "Thêm chi tiết đơn thành công" });
+      }
+
       onSaved();
       onClose();
     } catch (e: any) {
@@ -31,18 +50,31 @@ const OrderDetailEditModal = ({ visible, onClose, detail, onSaved }: any) => {
   };
 
   return (
-    <Modal open={visible} onCancel={onClose} footer={null} title="Chỉnh sửa chi tiết đơn">
+    <Modal
+      open={visible}
+      onCancel={onClose}
+      footer={null}
+      title="Chỉnh sửa chi tiết đơn"
+    >
       <Form form={form} layout="vertical">
-        <Form.Item name="productName" label="Tên sản phẩm" rules={[{ required: true }]}>
+        <Form.Item
+          name="productName"
+          label="Tên sản phẩm"
+          rules={[{ required: true }]}
+        >
           <Input />
         </Form.Item>
 
-        <Form.Item name="quantity" label="Số lượng" rules={[{ required: true }]}>
-          <InputNumber min={1} style={{ width: '100%' }} />
+        <Form.Item
+          name="quantity"
+          label="Số lượng"
+          rules={[{ required: true }]}
+        >
+          <InputNumber min={1} style={{ width: "100%" }} />
         </Form.Item>
 
         <Form.Item name="price" label="Giá" rules={[{ required: true }]}>
-          <InputNumber min={0} style={{ width: '100%' }} />
+          <InputNumber min={0} style={{ width: "100%" }} />
         </Form.Item>
 
         <Form.Item name="sku" label="SKU">
@@ -57,9 +89,13 @@ const OrderDetailEditModal = ({ visible, onClose, detail, onSaved }: any) => {
           </Select>
         </Form.Item>
 
-        <div style={{ textAlign: 'right' }}>
-          <Button style={{ marginRight: 8 }} onClick={onClose}>Hủy</Button>
-          <Button type="primary" onClick={handleSave}>Lưu</Button>
+        <div style={{ textAlign: "right" }}>
+          <Button style={{ marginRight: 8 }} onClick={onClose}>
+            Hủy
+          </Button>
+          <Button type="primary" onClick={handleSave}>
+            Lưu
+          </Button>
         </div>
       </Form>
     </Modal>

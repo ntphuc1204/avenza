@@ -232,6 +232,7 @@ const OrdersPage = () => {
         <Row gutter={[24, 24]}>
           {orders.map((order) => {
             const isCancelled = order.orderStatus === "CANCELLED";
+            const products = order?.products ?? [];
 
             return (
               <Col key={order._id} xs={24} md={12}>
@@ -317,9 +318,9 @@ const OrdersPage = () => {
 
                     <Divider />
 
-                    <Title level={5}>Sản phẩm ({order.products.length})</Title>
+                    <Title level={5}>Sản phẩm ({products.length})</Title>
 
-                    {order.products.slice(0, 3).map((item: any) => (
+                    {products.slice(0, 3).map((item: any) => (
                       <div
                         key={item.productId}
                         style={{
@@ -339,9 +340,9 @@ const OrdersPage = () => {
                       </div>
                     ))}
 
-                    {order.products.length > 3 ? (
+                    {products.length > 3 ? (
                       <Text type="secondary">
-                        Và {order.products.length - 3} sản phẩm khác...
+                        Và {products.length - 3} sản phẩm khác...
                       </Text>
                     ) : null}
 

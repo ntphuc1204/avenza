@@ -78,8 +78,7 @@ const BannerUpdate = ({
     return false;
   };
 
-  const isErrorResponse = (res: any) =>
-    res && Number(res.statusCode) >= 400;
+  const isErrorResponse = (res: any) => res && Number(res.statusCode) >= 400;
 
   const onFinish = async (values: any) => {
     try {
@@ -104,9 +103,7 @@ const BannerUpdate = ({
         link: values.link,
         displayOrder: values.displayOrder || 0,
         isActive: values.isActive ?? true,
-        startDate: values.startDate
-          ? values.startDate.toDate()
-          : undefined,
+        startDate: values.startDate ? values.startDate.toDate() : undefined,
         endDate: values.endDate ? values.endDate.toDate() : undefined,
         location: values.location,
         type: values.type,
@@ -152,17 +149,16 @@ const BannerUpdate = ({
           <Input placeholder="Nhập tiêu đề banner" />
         </Form.Item>
 
-        <Form.Item
-          label="Mô tả"
-          name="description"
-        >
+        <Form.Item label="Mô tả" name="description">
           <Input.TextArea rows={2} placeholder="Mô tả banner (tùy chọn)" />
         </Form.Item>
 
         <Form.Item
           label="URL Hình ảnh"
           name="imageUrl"
-          rules={[{ required: true, message: "Vui lòng cung cấp URL hình ảnh" }]}
+          rules={[
+            { required: true, message: "Vui lòng cung cấp URL hình ảnh" },
+          ]}
         >
           <Input placeholder="https://example.com/image.jpg" />
         </Form.Item>
@@ -178,35 +174,28 @@ const BannerUpdate = ({
             <p className="ant-upload-drag-icon">
               <InboxOutlined />
             </p>
-            <p className="ant-upload-text">
-              Nhấn hoặc kéo hình ảnh vào đây
-            </p>
+            <p className="ant-upload-text">Nhấn hoặc kéo hình ảnh vào đây</p>
           </Upload.Dragger>
           {imageUrl && (
             <div style={{ marginTop: 10 }}>
-              <img src={imageUrl} alt="preview" style={{ maxWidth: "100%", maxHeight: 200 }} />
+              <img
+                src={imageUrl}
+                alt="preview"
+                style={{ maxWidth: "100%", maxHeight: 200 }}
+              />
             </div>
           )}
         </Form.Item>
 
-        <Form.Item
-          label="Liên kết (Link)"
-          name="link"
-        >
+        <Form.Item label="Liên kết (Link)" name="link">
           <Input placeholder="/promotions/may-2024" />
         </Form.Item>
 
-        <Form.Item
-          label="Thứ tự hiển thị"
-          name="displayOrder"
-        >
+        <Form.Item label="Thứ tự hiển thị" name="displayOrder">
           <InputNumber min={0} />
         </Form.Item>
 
-        <Form.Item
-          label="Vị trí"
-          name="location"
-        >
+        <Form.Item label="Vị trí" name="location">
           <Select>
             <Select.Option value="HOMEPAGE">Trang chủ</Select.Option>
             <Select.Option value="SIDEBAR">Thanh bên</Select.Option>
@@ -215,10 +204,7 @@ const BannerUpdate = ({
           </Select>
         </Form.Item>
 
-        <Form.Item
-          label="Loại"
-          name="type"
-        >
+        <Form.Item label="Loại" name="type">
           <Select>
             <Select.Option value="BANNER">Banner</Select.Option>
             <Select.Option value="PROMOTION">Khuyến mãi</Select.Option>
@@ -226,25 +212,15 @@ const BannerUpdate = ({
           </Select>
         </Form.Item>
 
-        <Form.Item
-          label="Ngày bắt đầu"
-          name="startDate"
-        >
+        <Form.Item label="Ngày bắt đầu" name="startDate">
           <DatePicker showTime placeholder="Chọn ngày giờ" />
         </Form.Item>
 
-        <Form.Item
-          label="Ngày kết thúc"
-          name="endDate"
-        >
+        <Form.Item label="Ngày kết thúc" name="endDate">
           <DatePicker showTime placeholder="Chọn ngày giờ" />
         </Form.Item>
 
-        <Form.Item
-          label="Hoạt động"
-          name="isActive"
-          valuePropName="checked"
-        >
+        <Form.Item label="Hoạt động" name="isActive" valuePropName="checked">
           <Switch />
         </Form.Item>
       </Form>

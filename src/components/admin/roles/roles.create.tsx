@@ -28,12 +28,17 @@ const RoleCreateModal = ({ visible, onClose, editing }: any) => {
       }
       onClose();
     } catch (e: any) {
-      notification.error({ message: e?.message || 'Lỗi' });
+      notification.error({ message: e?.message || "Lỗi" });
     }
   };
 
   return (
-    <Modal open={visible} onCancel={onClose} footer={null} title={editing ? 'Sửa role' : 'Tạo role'}>
+    <Modal
+      open={visible}
+      onCancel={onClose}
+      footer={null}
+      title={editing ? "Sửa role" : "Tạo role"}
+    >
       <Form form={form} layout="vertical">
         <Form.Item name="name" label="Tên" rules={[{ required: true }]}>
           <Input />
@@ -44,10 +49,13 @@ const RoleCreateModal = ({ visible, onClose, editing }: any) => {
         </Form.Item>
 
         <Form.Item name="permissions" label="Permissions">
-          <Select mode="tags" placeholder="Thêm permissions (ví dụ: READ_PRODUCTS)"></Select>
+          <Select
+            mode="tags"
+            placeholder="Thêm permissions (ví dụ: READ_PRODUCTS)"
+          ></Select>
         </Form.Item>
 
-        <div style={{ textAlign: 'right' }}>
+        <div style={{ textAlign: "right" }}>
           <Button style={{ marginRight: 8 }} onClick={onClose}>
             Hủy
           </Button>

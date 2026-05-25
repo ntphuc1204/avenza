@@ -195,8 +195,18 @@ const HomePage = () => {
       _normalizedImage: normalizeImageUrl(b?.imageUrl),
     }));
 
-    console.log("[HomePage] NEXT_PUBLIC_BACKEND_URL:", process.env.NEXT_PUBLIC_BACKEND_URL);
-    console.log("[HomePage] banners with normalized image:", mapped.map((b: any) => ({ _id: b._id, imageUrl: b.imageUrl, _normalizedImage: b._normalizedImage })));
+    console.log(
+      "[HomePage] NEXT_PUBLIC_BACKEND_URL:",
+      process.env.NEXT_PUBLIC_BACKEND_URL,
+    );
+    console.log(
+      "[HomePage] banners with normalized image:",
+      mapped.map((b: any) => ({
+        _id: b._id,
+        imageUrl: b.imageUrl,
+        _normalizedImage: b._normalizedImage,
+      })),
+    );
 
     setBanners(mapped);
   };

@@ -59,12 +59,14 @@ const BannerTable = ({ data, accessToken }: IProps) => {
     return `${process.env.NEXT_PUBLIC_BACKEND_URL}/uploads/media/${url}`;
   };
   const [banners, setBanners] = useState<IBanner[]>(data?.results || []);
-  const [meta, setMeta] = useState<IMeta>(data?.meta || {
-    current: 1,
-    pageSize: 10,
-    pages: 0,
-    total: 0,
-  });
+  const [meta, setMeta] = useState<IMeta>(
+    data?.meta || {
+      current: 1,
+      pageSize: 10,
+      pages: 0,
+      total: 0,
+    },
+  );
   const [loading, setLoading] = useState(false);
 
   const pathname = usePathname();
@@ -82,7 +84,9 @@ const BannerTable = ({ data, accessToken }: IProps) => {
 
     try {
       const res = await bannerApi.getAll(page, meta.pageSize);
-      const results = Array.isArray(res?.data) ? res.data : res?.data?.results || [];
+      const results = Array.isArray(res?.data)
+        ? res.data
+        : res?.data?.results || [];
 
       setBanners(results);
       setMeta((prev) => ({
@@ -98,8 +102,7 @@ const BannerTable = ({ data, accessToken }: IProps) => {
     }
   };
 
-  const isErrorResponse = (res: any) =>
-    res && Number(res.statusCode) >= 400;
+  const isErrorResponse = (res: any) => res && Number(res.statusCode) >= 400;
 
   const handleDeleteBanner = async (id: string) => {
     try {
@@ -151,9 +154,7 @@ const BannerTable = ({ data, accessToken }: IProps) => {
     {
       title: "Vị trí",
       dataIndex: "location",
-      render: (location: string) => (
-        <Tag color="blue">{location}</Tag>
-      ),
+      render: (location: string) => <Tag color="blue">{location}</Tag>,
       width: 100,
     },
     {
