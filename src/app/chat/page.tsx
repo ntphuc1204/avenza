@@ -58,7 +58,29 @@ const ChatPage = () => {
       });
 
       socket.on("chat:message", (data: any) => {
-        setMessages((prev) => [...prev, data]);
+        setMessages((prev) => {
+          try {
+            // If server echoes message with tempId, remove temp and append real
+            if (data?.tempId) {
+              const filtered = prev.filter((m) => m._tempId !== data.tempId);
+              // avoid duplicate by _id
+              if (data._id && filtered.some((m) => m._id === data._id)) {
+                return filtered;
+              }
+              return [...filtered, data];
+            }
+
+            // if message already exists (by _id) skip to avoid duplicate
+            if (data?._id && prev.some((m) => m._id === data._id)) {
+              return prev;
+            }
+          } catch (e) {
+            // ignore dedupe errors
+          }
+
+          return [...prev, data];
+        });
+
         scrollToBottom();
       });
 
@@ -88,18 +110,28 @@ const ChatPage = () => {
 
     setSending(true);
     try {
+      // optimistic UI: add temp message immediately
+      const tempId = `t-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      const tempMsg = {
+        _tempId: tempId,
+        message: input,
+        sender: "USER",
+        createdAt: new Date().toISOString(),
+        pending: true,
+      } as any;
+
+      setMessages((prev) => [...prev, tempMsg]);
+      setInput("");
+      setTimeout(() => scrollToBottom(), 50);
+
       const res = await chatApi.sendMessage(
-        { message: input },
+        { message: input, tempId },
         session.user.access_token,
       );
 
-      if (res?.data || res) {
-        // append new message to UI and scroll
-        const msg = res.data || res;
-        setMessages((prev) => [...prev, msg]);
-        setInput("");
-        setTimeout(() => scrollToBottom(), 50);
-      } else {
+      if (!(res?.data || res)) {
+        // remove temp message on failure
+        setMessages((prev) => prev.filter((m) => m._tempId !== tempId));
         message.error(res?.message || "Failed to send message");
       }
     } catch (e) {
@@ -181,7 +213,7 @@ const ChatPage = () => {
             ) : (
               messages.map((msg, i) => (
                 <div
-                  key={i}
+                  key={msg._id || i}
                   style={{
                     marginBottom: 12,
                     display: "flex",

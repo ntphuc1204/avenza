@@ -102,10 +102,24 @@ const AdminChatPage = () => {
       });
 
       socket.on("chat:message", (data: any) => {
-        if (selectedUserId && data.userId === selectedUserId) {
-          setMessages((prev) => [...prev, data]);
-          scrollToBottom();
+        try {
+          if (selectedUserId && data.userId === selectedUserId) {
+            setMessages((prev) => {
+              try {
+                if (data?._id && prev.some((m) => m._id === data._id)) {
+                  return prev;
+                }
+              } catch (e) {
+                // ignore
+              }
+              return [...prev, data];
+            });
+            scrollToBottom();
+          }
+        } catch (e) {
+          // ignore
         }
+
         loadThreads();
       });
 
@@ -269,7 +283,7 @@ const AdminChatPage = () => {
                   )}
                   {messages.map((msg, i) => (
                     <div
-                      key={i}
+                      key={msg._id || i}
                       style={{
                         marginBottom: 12,
                         textAlign: msg.sender === "ADMIN" ? "right" : "left",

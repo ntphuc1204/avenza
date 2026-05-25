@@ -240,6 +240,37 @@ const CartPage = () => {
     try {
       setCheckoutLoading(true);
 
+      // payload order
+      const orderData = {
+        userId: userProfile?._id,
+
+        products: cart.items.map((item: any) => ({
+          productId: item.productId,
+          name: item.name,
+          image: item.image,
+          price: item.price,
+          quantity: item.quantity,
+        })),
+
+        totalPrice: cart.totalPrice,
+
+        discountAmount,
+
+        finalPrice,
+
+        discountCode: selectedDiscount?.discount?.code || null,
+
+        shippingAddress: {
+          recipientName: values.recipientName,
+          phone: values.phone,
+          address: values.address,
+          note: values.note || "",
+        },
+
+        paymentMethod: "MOMO",
+      };
+
+      // create momo payment
       const paymentRes = await sendRequest<any>({
         url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/payments/momo`,
         method: "POST",
@@ -247,29 +278,7 @@ const CartPage = () => {
           Authorization: `Bearer ${session?.user?.access_token}`,
         },
         body: {
-          orderData: {
-            userId: userProfile?._id,
-
-            products: cart.items.map((item: any) => ({
-              productId: item.productId,
-              name: item.name,
-              image: item.image,
-              price: item.price,
-              quantity: item.quantity,
-            })),
-
-            totalPrice: cart.totalPrice,
-            discountAmount,
-            finalPrice,
-            discountCode: selectedDiscount?.discount?.code,
-
-            shippingAddress: {
-              recipientName: values.recipientName,
-              phone: values.phone,
-              address: values.address,
-              note: values.note,
-            },
-          },
+          orderData,
           amount: finalPrice,
         },
       });
@@ -277,20 +286,22 @@ const CartPage = () => {
       const paymentUrl = paymentRes?.data?.paymentUrl;
 
       if (!paymentUrl) {
-        throw new Error(paymentRes?.message || "Không tạo được MoMo URL");
+        throw new Error(
+          paymentRes?.message || "Không tạo được URL thanh toán MoMo",
+        );
       }
 
+      // redirect momo
       window.location.href = paymentUrl;
-      return;
-    } catch (err: any) {
-      setCheckoutLoading(false);
+    } catch (error: any) {
+      console.log("MOMO ERROR:", error);
 
       Modal.error({
         title: "Thanh toán MoMo thất bại",
-        content: err?.message || "Không thể kết nối tới cổng thanh toán MoMo",
+        content: error?.message || "Không thể kết nối tới cổng thanh toán MoMo",
       });
 
-      return;
+      setCheckoutLoading(false);
     }
   };
 
@@ -447,7 +458,9 @@ const CartPage = () => {
                 >
                   <Space direction="vertical" size={4}>
                     <Tag color="orange">{selectedDiscount.discount.code}</Tag>
-                    <Text>Giảm: {discountAmount.toLocaleString("vi-VN")} đ</Text>
+                    <Text>
+                      Giảm: {discountAmount.toLocaleString("vi-VN")} đ
+                    </Text>
                     <Text strong>
                       Còn thanh toán: {finalPrice.toLocaleString("vi-VN")} đ
                     </Text>
