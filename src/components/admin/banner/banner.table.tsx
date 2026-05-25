@@ -192,7 +192,7 @@ const BannerTable = ({ data, accessToken }: IProps) => {
     },
     {
       title: "Hành động",
-      fixed: "right",
+      fixed: "right" as const,
       width: 100,
       render: (_: any, record: IBanner) => (
         <Space>

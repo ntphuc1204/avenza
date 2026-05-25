@@ -467,6 +467,10 @@ const OrderTable = ({ data, accessToken }: IProps) => {
                                           return;
                                         }
                                         try {
+                                          if (!accessToken) {
+                                            message.error("No access token");
+                                            return;
+                                          }
                                           await orderDetailsApi.remove(
                                             product._id,
                                             accessToken,

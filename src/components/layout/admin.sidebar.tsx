@@ -40,6 +40,7 @@ const AdminSideBar = () => {
   const { data: session } = useSession();
 
   const [notificationCount, setNotificationCount] = useState(0);
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
 
   const socketRef = useRef<Socket | null>(null);
 
@@ -61,9 +62,11 @@ const AdminSideBar = () => {
     loadUnreadCount();
 
     window.addEventListener("notificationsRead", loadUnreadCount);
+    window.addEventListener("chatViewed", () => setChatUnreadCount(0));
 
     return () => {
       window.removeEventListener("notificationsRead", loadUnreadCount);
+      window.removeEventListener("chatViewed", () => setChatUnreadCount(0));
     };
   }, [session]);
 
@@ -74,6 +77,7 @@ const AdminSideBar = () => {
       process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8081",
       {
         transports: ["websocket"],
+        query: { userId: session.user._id, role: "ADMIN" },
       },
     );
 
@@ -87,6 +91,14 @@ const AdminSideBar = () => {
     socket.on("notification-created", (item: any) => {
       if (item.targetRole === "ADMIN" || !item.targetRole) {
         setNotificationCount((prev) => prev + 1);
+      }
+    });
+
+    // realtime tin nhắn mới từ users
+    socket.on("chat:message", (data: any) => {
+      // khi có tin nhắn từ user, tăng badge count
+      if (data?.sender === "USER") {
+        setChatUnreadCount((prev) => prev + 1);
       }
     });
 
@@ -138,7 +150,7 @@ const AdminSideBar = () => {
         {
           key: "suppliers",
 
-          label: <Link href="/dashboard/suppliers">Nhà cung cấp</Link>,
+          label: <Link href="/dashboard/suppliers">Manage Suppliers</Link>,
 
           icon: <TruckOutlined />,
         },
@@ -178,6 +190,33 @@ const AdminSideBar = () => {
           label: <Link href="/dashboard/banners">Manage Banners</Link>,
 
           icon: <PictureOutlined />,
+        },
+        {
+          key: "chat",
+
+          label: (
+            <Link href="/dashboard/chat">
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  width: "100%",
+                }}
+              >
+                <span>Chat Support</span>
+                {chatUnreadCount > 0 && (
+                  <Badge
+                    count={chatUnreadCount}
+                    size="small"
+                    style={{ backgroundColor: "#ff4d4f" }}
+                  />
+                )}
+              </div>
+            </Link>
+          ),
+
+          icon: <CommentOutlined />,
         },
         {
           key: "notifications",

@@ -31,7 +31,11 @@ const AdminHeader = (props: any) => {
     {
       key: "4",
       danger: true,
-      label: <span onClick={() => signOut()}>Đăng xuất</span>,
+      label: (
+        <span onClick={() => signOut({ callbackUrl: "/auth/login" })}>
+          Đăng xuất
+        </span>
+      ),
     },
   ];
 

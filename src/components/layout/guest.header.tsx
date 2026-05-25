@@ -55,6 +55,8 @@ const GuestHeader = () => {
 
   const [cartCount, setCartCount] = useState(0);
 
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
+
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
@@ -111,6 +113,10 @@ const GuestHeader = () => {
       loadCartCount();
     };
 
+    const handleUserChatViewed = () => {
+      setChatUnreadCount(0);
+    };
+
     // RUN
     loadNotificationCount();
 
@@ -121,10 +127,14 @@ const GuestHeader = () => {
 
     window.addEventListener("cartUpdated", handleCartUpdated);
 
+    window.addEventListener("userChatViewed", handleUserChatViewed);
+
     return () => {
       window.removeEventListener("notificationsRead", handleNotificationsRead);
 
       window.removeEventListener("cartUpdated", handleCartUpdated);
+
+      window.removeEventListener("userChatViewed", handleUserChatViewed);
     };
   }, [session]);
 
@@ -135,6 +145,7 @@ const GuestHeader = () => {
       process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080",
       {
         transports: ["websocket"],
+        query: { userId: session.user._id, role: "USER" },
       },
     );
 
@@ -148,6 +159,12 @@ const GuestHeader = () => {
 
       if (isForCurrentUser) {
         setNotificationCount((prev) => prev + 1);
+      }
+    });
+
+    socket.on("chat:message", (data: any) => {
+      if (data?.sender === "ADMIN") {
+        setChatUnreadCount((prev) => prev + 1);
       }
     });
 
@@ -254,6 +271,27 @@ const GuestHeader = () => {
           AI
         </Button>
       </Link>
+
+      {session?.user && (
+        <Link href="/chat" onClick={() => setChatUnreadCount(0)}>
+          <Badge
+            count={chatUnreadCount}
+            size="small"
+            offset={[6, -4]}
+            style={{ backgroundColor: "#ff4d4f" }}
+          >
+            <Button
+              type="text"
+              icon={<MenuOutlined />}
+              style={{
+                width: screens.md ? "auto" : "100%",
+              }}
+            >
+              Chat
+            </Button>
+          </Badge>
+        </Link>
+      )}
 
       {session?.user?.role === "ADMIN" && (
         <Link href="/dashboard">
@@ -401,6 +439,7 @@ const GuestHeader = () => {
           direction="vertical"
           style={{
             width: "100%",
+            alignItems: "flex-start",
           }}
         >
           {menuItems}
