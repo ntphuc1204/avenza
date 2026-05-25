@@ -50,3 +50,33 @@ export const uploadProductImages = async (
 
   return res;
 };
+
+export const uploadMediaImages = async (
+  files: File[],
+  accessToken: string
+) => {
+  const formData = new FormData();
+
+  files.forEach((file) => {
+    formData.append("images", file);
+  });
+
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/uploads/images`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: formData,
+    }
+  );
+
+  const res = await response.json();
+
+  if (!response.ok) {
+    throw new Error(res?.message || "Upload banner image failed");
+  }
+
+  return res;
+};

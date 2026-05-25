@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { sendRequest } from "@/utils/api";
+import { normalizeImageUrl } from "@/utils/image";
 import { useState } from "react";
 
 const { Text, Title } = Typography;
@@ -57,10 +58,12 @@ const ProductCard = ({ product, onAddToCart }: IProductCardProps) => {
     }
   };
 
-  const imageUrl =
+  const imageUrlRaw =
     Array.isArray(product.images) && product.images.length
       ? product.images[0]
       : "/placeholder.png";
+
+  const imageUrl = normalizeImageUrl(imageUrlRaw);
 
   return (
     <Card

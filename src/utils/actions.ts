@@ -159,10 +159,26 @@ export const handleUpdateProductAction = async (data: any) => {
     if (payload.images && Array.isArray(payload.images)) {
         payload.images = await Promise.all(
             payload.images.map(async (item: any) => {
+                // already a URL string
+                if (typeof item === 'string') return item;
+
+                // direct File from input
                 if (item instanceof File) {
                     return await uploadImage(item);
                 }
-                return item;
+
+                // Antd Upload file object: originFileObj is the File
+                if (item?.originFileObj instanceof File) {
+                    return await uploadImage(item.originFileObj);
+                }
+
+                // Uploaded item may contain url or response data
+                if (item?.url) return item.url;
+
+                if (item?.response?.data?.image) return item.response.data.image;
+
+                // fallback: stringify (but backend expects string URLs)
+                return String(item);
             })
         );
     }

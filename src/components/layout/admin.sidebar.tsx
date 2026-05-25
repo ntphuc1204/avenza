@@ -15,6 +15,7 @@ import {
   TruckOutlined,
   ImportOutlined,
   GiftOutlined,
+  PictureOutlined,
 } from "@ant-design/icons";
 
 import React, { useContext, useEffect, useRef, useState } from "react";
@@ -170,6 +171,13 @@ const AdminSideBar = () => {
           label: <Link href="/dashboard/discounts">Manage Vouchers</Link>,
 
           icon: <GiftOutlined />,
+        },
+        {
+          key: "banners",
+
+          label: <Link href="/dashboard/banners">Manage Banners</Link>,
+
+          icon: <PictureOutlined />,
         },
         {
           key: "notifications",

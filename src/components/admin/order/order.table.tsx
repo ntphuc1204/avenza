@@ -1,12 +1,14 @@
 "use client";
 
-import { message, Pagination, Select, Tag, Button, Modal } from "antd";
+import { message, Pagination, Select, Tag, Button, Modal, Space, Popconfirm } from "antd";
 
 import { useState } from "react";
 
 import { useRouter } from "next/navigation";
 
 import { sendRequest } from "@/utils/api";
+import orderDetailsApi from '@/utils/orderDetails.api';
+import OrderDetailEditModal from './orderDetail.edit';
 
 interface IOrderProduct {
   productId: string;
@@ -90,6 +92,9 @@ const OrderTable = ({ data, accessToken }: IProps) => {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
+  const [orderDetailsMap, setOrderDetailsMap] = useState<Record<string, any[]>>({});
+  const [editingDetail, setEditingDetail] = useState<any | null>(null);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
 
   const handleUpdateStatus = async (orderId: string, status: string) => {
     if (!accessToken) {
@@ -381,27 +386,55 @@ const OrderTable = ({ data, accessToken }: IProps) => {
                         <div className="expanded-content">
                           <h4>Danh sách sản phẩm</h4>
 
-                          <div className="order-products">
-                            {item.products?.map((product, index) => (
-                              <div
-                                key={`${product.productId}-${index}`}
-                                className="order-product-item"
-                              >
-                                <div>
-                                  <strong>
-                                    {product.name || product.productId}
-                                  </strong>
-                                </div>
+                            <div className="order-products">
+                              {(orderDetailsMap[item._id] || item.products || []).map((product, index) => (
+                                <div
+                                  key={`${product._id || product.productId}-${index}`}
+                                  className="order-product-item"
+                                  style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center' }}
+                                >
+                                  <div>
+                                    <strong>
+                                      {product.productName || product.name || product.productId}
+                                    </strong>
 
-                                <div>Số lượng: {product.quantity}</div>
+                                    <div>Số lượng: {product.quantity}</div>
 
-                                <div>
-                                  Giá: {product.price?.toLocaleString("vi-VN")}{" "}
-                                  đ
+                                    <div>Giá: {product.price?.toLocaleString("vi-VN")} đ</div>
+                                  </div>
+
+                                  <div>
+                                    <Space>
+                                      <Button size="small" onClick={async () => {
+                                        // open edit modal
+                                        setEditingDetail(product);
+                                        setDetailModalVisible(true);
+                                      }}>
+                                        Sửa
+                                      </Button>
+
+                                      <Popconfirm title="Xác nhận xóa?" onConfirm={async () => {
+                                        if (!product._id) {
+                                          message.error('Không có id để xóa');
+                                          return;
+                                        }
+                                        try {
+                                          await orderDetailsApi.remove(product._id, accessToken);
+                                          message.success('Đã xóa chi tiết đơn');
+                                          // refresh
+                                          const res = await orderDetailsApi.findByOrder(item._id);
+                                          setOrderDetailsMap(prev => ({ ...prev, [item._id]: res?.data || res || [] }));
+                                        } catch (e) {
+                                          message.error('Xóa thất bại');
+                                        }
+                                      }}>
+                                        <Button danger size="small">Xóa</Button>
+                                      </Popconfirm>
+                                    </Space>
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
-                          </div>
+                              ))}
+                            </div>
                         </div>
                       </td>
                     </tr>
@@ -423,6 +456,17 @@ const OrderTable = ({ data, accessToken }: IProps) => {
           pageSizeOptions={["10", "20", "50", "100"]}
         />
       </div>
+
+      <OrderDetailEditModal
+        visible={detailModalVisible}
+        onClose={() => { setDetailModalVisible(false); setEditingDetail(null); }}
+        detail={editingDetail}
+        onSaved={async () => {
+          if (!editingDetail) return;
+          const res = await orderDetailsApi.findByOrder(editingDetail.orderId || editingDetail.orderId);
+          setOrderDetailsMap(prev => ({ ...prev, [editingDetail.orderId]: res?.data || res || [] }));
+        }}
+      />
     </div>
   );
 };

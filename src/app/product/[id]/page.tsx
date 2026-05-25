@@ -17,6 +17,7 @@ import {
 } from "antd";
 
 import { useEffect, useState } from "react";
+import { normalizeImageUrl } from "@/utils/image";
 
 import { useParams, useRouter } from "next/navigation";
 
@@ -143,12 +144,12 @@ const ProductDetailPage = () => {
   // =========================
   // FIX CATEGORY + IMAGE
   // =========================
-  const imageUrl =
-    Array.isArray(product?.images) && product.images.length
+  const imageUrlRaw =
+    Array.isArray(product?.images) && product?.images.length
       ? product.images[0]
-      : typeof product?.images === "string"
-        ? product.images
-        : "/placeholder.png";
+      : "/placeholder.png";
+
+  const imageUrl = normalizeImageUrl(imageUrlRaw);
 
   if (!productId) {
     return (

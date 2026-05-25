@@ -22,6 +22,8 @@ import GuestLayout from "@/components/layout/guest.layout";
 import ProductCard from "@/components/guest/product.card";
 
 import { sendRequest } from "@/utils/api";
+import { bannerApi } from "@/utils/banner.api";
+import { normalizeImageUrl } from "@/utils/image";
 
 import { useSearchParams } from "next/navigation";
 
@@ -71,6 +73,10 @@ const HomePage = () => {
   const [allLoading, setAllLoading] = useState(true);
 
   const [allCurrent, setAllCurrent] = useState(1);
+
+  const [banners, setBanners] = useState<any[]>([]);
+
+  const [bannerLoading, setBannerLoading] = useState(true);
 
   const [allPageSize] = useState(12);
 
@@ -155,6 +161,44 @@ const HomePage = () => {
     });
 
     setDiscounts(res?.data?.results ?? []);
+  };
+
+  const loadBanners = async () => {
+    setBannerLoading(true);
+
+    const res = await bannerApi.getByLocation("HOMEPAGE");
+
+    console.log("[HomePage] loadBanners response:", res);
+
+    setBannerLoading(false);
+
+    // support multiple response shapes: array, { data: [] }, { data: { results: [] } }
+    let bannersData: any[] = [];
+
+    if (Array.isArray(res)) {
+      bannersData = res;
+    } else if (Array.isArray(res?.data)) {
+      bannersData = res.data;
+    } else if (Array.isArray(res?.data?.results)) {
+      bannersData = res.data.results;
+    } else if (Array.isArray(res?.results)) {
+      bannersData = res.results;
+    } else if (res?.data) {
+      bannersData = Array.isArray(res.data) ? res.data : [res.data];
+    }
+
+    console.log("[HomePage] parsed banners:", bannersData);
+
+    // attach normalized image url for easier inspection in DevTools
+    const mapped = (bannersData || []).map((b: any) => ({
+      ...b,
+      _normalizedImage: normalizeImageUrl(b?.imageUrl),
+    }));
+
+    console.log("[HomePage] NEXT_PUBLIC_BACKEND_URL:", process.env.NEXT_PUBLIC_BACKEND_URL);
+    console.log("[HomePage] banners with normalized image:", mapped.map((b: any) => ({ _id: b._id, imageUrl: b.imageUrl, _normalizedImage: b._normalizedImage })));
+
+    setBanners(mapped);
   };
 
   const loadClaimedDiscounts = async () => {
@@ -242,6 +286,8 @@ const HomePage = () => {
     loadTopProducts();
 
     loadDiscounts();
+
+    loadBanners();
   }, []);
 
   useEffect(() => {
@@ -269,56 +315,66 @@ const HomePage = () => {
           boxShadow: "0 10px 35px rgba(0,0,0,0.08)",
         }}
       >
-        <Swiper
-          modules={[Autoplay, SwiperPagination]}
-          autoplay={{
-            delay: 3000,
-            disableOnInteraction: false,
-          }}
-          pagination={{
-            clickable: true,
-          }}
-          loop
-        >
-          <SwiperSlide>
-            <img
-              src="/banner1.jpg"
-              alt="banner1"
-              style={{
-                width: "100%",
-                aspectRatio: "16 / 6",
-                objectFit: "cover",
-                display: "block",
-              }}
-            />
-          </SwiperSlide>
-
-          <SwiperSlide>
-            <img
-              src="/banner2.jpg"
-              alt="banner2"
-              style={{
-                width: "100%",
-                aspectRatio: "16 / 6",
-                objectFit: "cover",
-                display: "block",
-              }}
-            />
-          </SwiperSlide>
-
-          <SwiperSlide>
-            <img
-              src="/banner3.jpg"
-              alt="banner3"
-              style={{
-                width: "100%",
-                aspectRatio: "16 / 6",
-                objectFit: "cover",
-                display: "block",
-              }}
-            />
-          </SwiperSlide>
-        </Swiper>
+        {bannerLoading ? (
+          <div style={{ padding: 24 }}>
+            <Skeleton active paragraph={{ rows: 3 }} />
+          </div>
+        ) : banners.length ? (
+          <Swiper
+            modules={[Autoplay, SwiperPagination]}
+            autoplay={{
+              delay: 3000,
+              disableOnInteraction: false,
+            }}
+            pagination={{
+              clickable: true,
+            }}
+            loop
+          >
+            {banners.map((banner) => (
+              <SwiperSlide key={banner._id}>
+                {banner.link ? (
+                  <a href={banner.link} target="_blank" rel="noreferrer">
+                    <img
+                      src={normalizeImageUrl(banner.imageUrl)}
+                      alt={banner.title || "banner"}
+                      style={{
+                        width: "100%",
+                        aspectRatio: "16 / 6",
+                        objectFit: "cover",
+                        display: "block",
+                      }}
+                    />
+                  </a>
+                ) : (
+                  <img
+                    src={normalizeImageUrl(banner.imageUrl)}
+                    alt={banner.title || "banner"}
+                    style={{
+                      width: "100%",
+                      aspectRatio: "16 / 6",
+                      objectFit: "cover",
+                      display: "block",
+                    }}
+                  />
+                )}
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        ) : (
+          <div
+            style={{
+              width: "100%",
+              aspectRatio: "16 / 6",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              background: "#f5f5f5",
+            }}
+          >
+            <Text type="secondary">Chưa có banner nào</Text>
+          </div>
+        )}
       </div>
 
       {/* DISCOUNTS */}
