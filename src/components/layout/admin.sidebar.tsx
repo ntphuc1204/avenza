@@ -158,7 +158,7 @@ const AdminSideBar = () => {
         {
           key: "stock-imports",
 
-          label: <Link href="/dashboard/stock-imports">Nhập hàng</Link>,
+          label: <Link href="/dashboard/stock-imports">Import goods</Link>,
 
           icon: <ImportOutlined />,
         },
