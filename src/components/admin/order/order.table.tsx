@@ -210,8 +210,6 @@ const OrderTable = ({ data, accessToken }: IProps) => {
 
               <th>Địa chỉ giao hàng</th>
 
-              <th>Sản phẩm</th>
-
               <th>Yêu cầu hủy</th>
 
               <th className="sticky-column">Hành động</th>
@@ -224,7 +222,19 @@ const OrderTable = ({ data, accessToken }: IProps) => {
 
               return (
                 <>
-                  <tr key={item._id}>
+                  <tr
+                    key={item._id}
+                    onClick={() => {
+                      if (isExpanded) {
+                        setExpandedRows(
+                          expandedRows.filter((id) => id !== item._id),
+                        );
+                      } else {
+                        setExpandedRows([...expandedRows, item._id]);
+                      }
+                    }}
+                    style={{ cursor: "pointer" }}
+                  >
                     <td>
                       <div className="table-subtext">{item._id}</div>
                     </td>
@@ -312,23 +322,6 @@ const OrderTable = ({ data, accessToken }: IProps) => {
                     </td>
 
                     <td>
-                      <Button
-                        size="small"
-                        onClick={() => {
-                          if (isExpanded) {
-                            setExpandedRows(
-                              expandedRows.filter((id) => id !== item._id),
-                            );
-                          } else {
-                            setExpandedRows([...expandedRows, item._id]);
-                          }
-                        }}
-                      >
-                        {isExpanded ? "Ẩn" : "Xem"}
-                      </Button>
-                    </td>
-
-                    <td>
                       {item.cancelStatus === "REQUESTED" ? (
                         <div
                           style={{
@@ -358,7 +351,10 @@ const OrderTable = ({ data, accessToken }: IProps) => {
                             style={{
                               marginTop: 12,
                             }}
-                            onClick={() => handleApproveCancel(item._id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleApproveCancel(item._id);
+                            }}
                           >
                             Xác nhận hủy
                           </Button>
@@ -379,6 +375,7 @@ const OrderTable = ({ data, accessToken }: IProps) => {
                           style={{
                             width: 180,
                           }}
+                          onClick={(e) => e.stopPropagation()}
                           onChange={(status) =>
                             handleUpdateStatus(item._id, status)
                           }
@@ -393,29 +390,11 @@ const OrderTable = ({ data, accessToken }: IProps) => {
 
                   {isExpanded && (
                     <tr>
-                      <td colSpan={10} className="expanded-row">
+                      <td colSpan={9} className="expanded-row">
                         <div className="expanded-content">
                           <h4>Danh sách sản phẩm</h4>
 
                           <div className="order-products">
-                            <div
-                              style={{
-                                marginBottom: 12,
-                                display: "flex",
-                                justifyContent: "flex-end",
-                              }}
-                            >
-                              <Button
-                                size="small"
-                                type="primary"
-                                onClick={() => {
-                                  setEditingDetail({ orderId: item._id });
-                                  setDetailModalVisible(true);
-                                }}
-                              >
-                                Thêm sản phẩm
-                              </Button>
-                            </div>
                             {(
                               orderDetailsMap[item._id] ||
                               item.products ||
@@ -444,59 +423,6 @@ const OrderTable = ({ data, accessToken }: IProps) => {
                                     Giá:{" "}
                                     {product.price?.toLocaleString("vi-VN")} đ
                                   </div>
-                                </div>
-
-                                <div>
-                                  <Space>
-                                    <Button
-                                      size="small"
-                                      onClick={async () => {
-                                        // open edit modal
-                                        setEditingDetail(product);
-                                        setDetailModalVisible(true);
-                                      }}
-                                    >
-                                      Sửa
-                                    </Button>
-
-                                    <Popconfirm
-                                      title="Xác nhận xóa?"
-                                      onConfirm={async () => {
-                                        if (!product._id) {
-                                          message.error("Không có id để xóa");
-                                          return;
-                                        }
-                                        try {
-                                          if (!accessToken) {
-                                            message.error("No access token");
-                                            return;
-                                          }
-                                          await orderDetailsApi.remove(
-                                            product._id,
-                                            accessToken,
-                                          );
-                                          message.success(
-                                            "Đã xóa chi tiết đơn",
-                                          );
-                                          // refresh
-                                          const res =
-                                            await orderDetailsApi.findByOrder(
-                                              item._id,
-                                            );
-                                          setOrderDetailsMap((prev) => ({
-                                            ...prev,
-                                            [item._id]: res?.data || res || [],
-                                          }));
-                                        } catch (e) {
-                                          message.error("Xóa thất bại");
-                                        }
-                                      }}
-                                    >
-                                      <Button danger size="small">
-                                        Xóa
-                                      </Button>
-                                    </Popconfirm>
-                                  </Space>
                                 </div>
                               </div>
                             ))}
