@@ -40,12 +40,28 @@ const RoleCreateModal = ({ visible, onClose, editing }: any) => {
       title={editing ? "Sửa role" : "Tạo role"}
     >
       <Form form={form} layout="vertical">
-        <Form.Item name="name" label="Tên" rules={[{ required: true }]}>
-          <Input />
+        <Form.Item
+          name="name"
+          label="Tên"
+          rules={[
+            { required: true, message: "Tên role không được trống" },
+            { min: 2, message: "Tên tối thiểu 2 ký tự" },
+            { max: 100, message: "Tên tối đa 100 ký tự" },
+            {
+              pattern: /^[A-Z_]+$/,
+              message: "Tên role chỉ chứa chữ hoa và dấu gạch dưới",
+            },
+          ]}
+        >
+          <Input placeholder="VD: ADMIN, MANAGER, USER" />
         </Form.Item>
 
-        <Form.Item name="description" label="Mô tả">
-          <Input />
+        <Form.Item
+          name="description"
+          label="Mô tả"
+          rules={[{ max: 500, message: "Mô tả tối đa 500 ký tự" }]}
+        >
+          <Input placeholder="Mô tả role" />
         </Form.Item>
 
         <Form.Item name="permissions" label="Permissions">

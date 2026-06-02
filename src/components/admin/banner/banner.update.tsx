@@ -144,12 +144,20 @@ const BannerUpdate = ({
         <Form.Item
           label="Tiêu đề"
           name="title"
-          rules={[{ required: true, message: "Vui lòng nhập tiêu đề" }]}
+          rules={[
+            { required: true, message: "Vui lòng nhập tiêu đề" },
+            { min: 3, message: "Tiêu đề tối thiểu 3 ký tự" },
+            { max: 255, message: "Tiêu đề tối đa 255 ký tự" },
+          ]}
         >
           <Input placeholder="Nhập tiêu đề banner" />
         </Form.Item>
 
-        <Form.Item label="Mô tả" name="description">
+        <Form.Item
+          label="Mô tả"
+          name="description"
+          rules={[{ max: 1000, message: "Mô tả tối đa 1000 ký tự" }]}
+        >
           <Input.TextArea rows={2} placeholder="Mô tả banner (tùy chọn)" />
         </Form.Item>
 
@@ -158,6 +166,7 @@ const BannerUpdate = ({
           name="imageUrl"
           rules={[
             { required: true, message: "Vui lòng cung cấp URL hình ảnh" },
+            { type: "url", message: "URL hình ảnh không hợp lệ" },
           ]}
         >
           <Input placeholder="https://example.com/image.jpg" />

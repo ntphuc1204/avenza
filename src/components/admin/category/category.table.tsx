@@ -300,20 +300,34 @@ const CategoryTable = ({ data, accessToken }: IProps) => {
             name="name"
             label="Tên danh mục"
             rules={[
+              { required: true, message: "Tên danh mục không được trống" },
+              { min: 3, message: "Tên tối thiểu 3 ký tự" },
+              { max: 255, message: "Tên tối đa 255 ký tự" },
+            ]}
+          >
+            <Input />
+          </Form.Item>
+
+          <Form.Item
+            name="slug"
+            label="Slug"
+            rules={[
+              { min: 3, message: "Slug tối thiểu 3 ký tự" },
+              { max: 255, message: "Slug tối đa 255 ký tự" },
               {
-                required: true,
-                message: "Vui lòng nhập tên danh mục",
+                pattern: /^[a-z0-9-]+$/,
+                message: "Slug chỉ chứa chữ cái thường, số và dấu gạch ngang",
               },
             ]}
           >
             <Input />
           </Form.Item>
 
-          <Form.Item name="slug" label="Slug">
-            <Input />
-          </Form.Item>
-
-          <Form.Item name="description" label="Mô tả">
+          <Form.Item
+            name="description"
+            label="Mô tả"
+            rules={[{ max: 2000, message: "Mô tả tối đa 2000 ký tự" }]}
+          >
             <Input.TextArea rows={4} />
           </Form.Item>
         </Form>

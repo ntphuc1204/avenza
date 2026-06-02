@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Button,
-  Form,
-  Input,
-  message,
-  Modal,
-  Popconfirm,
-} from "antd";
+import { Button, Form, Input, message, Modal, Popconfirm } from "antd";
 
 import { DeleteTwoTone, EditTwoTone } from "@ant-design/icons";
 
@@ -32,7 +25,6 @@ interface IProps {
 }
 
 const SupplierTable = ({ suppliers, accessToken }: IProps) => {
-
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [editingSupplier, setEditingSupplier] = useState<ISupplier | null>(
@@ -260,17 +252,41 @@ const SupplierTable = ({ suppliers, accessToken }: IProps) => {
           <Form.Item
             name="name"
             label="Tên nhà cung cấp"
-            rules={[{ required: true, message: "Vui lòng nhập tên" }]}
+            rules={[
+              { required: true, message: "Tên nhà cung cấp không được trống" },
+              { min: 3, message: "Tên tối thiểu 3 ký tự" },
+              { max: 255, message: "Tên tối đa 255 ký tự" },
+            ]}
           >
             <Input />
           </Form.Item>
-          <Form.Item name="email" label="Email">
+          <Form.Item
+            name="email"
+            label="Email"
+            rules={[
+              { type: "email", message: "Email không hợp lệ" },
+              { max: 255, message: "Email tối đa 255 ký tự" },
+            ]}
+          >
             <Input />
           </Form.Item>
-          <Form.Item name="phone" label="Điện thoại">
+          <Form.Item
+            name="phone"
+            label="Điện thoại"
+            rules={[
+              {
+                pattern: /^[0-9]{10,11}$/,
+                message: "Số điện thoại phải có 10-11 chữ số",
+              },
+            ]}
+          >
             <Input />
           </Form.Item>
-          <Form.Item name="address" label="Địa chỉ">
+          <Form.Item
+            name="address"
+            label="Địa chỉ"
+            rules={[{ max: 500, message: "Địa chỉ tối đa 500 ký tự" }]}
+          >
             <Input.TextArea rows={3} />
           </Form.Item>
         </Form>

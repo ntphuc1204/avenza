@@ -117,6 +117,7 @@ const UserCreate = (props: IProps) => {
               rules={[
                 { required: true, message: "Vui lòng nhập email!" },
                 { type: "email", message: "Email không hợp lệ!" },
+                { max: 255, message: "Email tối đa 255 ký tự" },
               ]}
             >
               <Input type="email" placeholder="example@email.com" />
@@ -129,6 +130,7 @@ const UserCreate = (props: IProps) => {
               rules={[
                 { required: true, message: "Vui lòng nhập mật khẩu!" },
                 { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự!" },
+                { max: 255, message: "Mật khẩu tối đa 255 ký tự" },
               ]}
             >
               <Input.Password placeholder="Nhập mật khẩu" />
@@ -138,9 +140,27 @@ const UserCreate = (props: IProps) => {
             <Form.Item
               label="Tên người dùng"
               name="name"
-              rules={[{ required: true, message: "Vui lòng nhập tên!" }]}
+              rules={[
+                { required: true, message: "Vui lòng nhập tên!" },
+                { min: 2, message: "Tên tối thiểu 2 ký tự" },
+                { max: 255, message: "Tên tối đa 255 ký tự" },
+              ]}
             >
               <Input placeholder="Nhập tên" />
+            </Form.Item>
+          </Col>
+          <Col span={24}>
+            <Form.Item
+              label="Số điện thoại"
+              name="phone"
+              rules={[
+                {
+                  pattern: /^[0-9]{10,11}$/,
+                  message: "Số điện thoại phải có 10-11 chữ số",
+                },
+              ]}
+            >
+              <Input placeholder="0912345678" />
             </Form.Item>
           </Col>
           <Col span={24}>

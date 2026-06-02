@@ -60,7 +60,11 @@ const OrderDetailEditModal = ({ visible, onClose, detail, onSaved }: any) => {
         <Form.Item
           name="productName"
           label="Tên sản phẩm"
-          rules={[{ required: true }]}
+          rules={[
+            { required: true, message: "Tên sản phẩm không được trống" },
+            { min: 3, message: "Tên sản phẩm tối thiểu 3 ký tự" },
+            { max: 255, message: "Tên sản phẩm tối đa 255 ký tự" },
+          ]}
         >
           <Input />
         </Form.Item>
@@ -68,16 +72,30 @@ const OrderDetailEditModal = ({ visible, onClose, detail, onSaved }: any) => {
         <Form.Item
           name="quantity"
           label="Số lượng"
-          rules={[{ required: true }]}
+          rules={[
+            { required: true, message: "Số lượng không được trống" },
+            { pattern: /^\d+$/, message: "Số lượng phải là số dương" },
+          ]}
         >
-          <InputNumber min={1} style={{ width: "100%" }} />
+          <InputNumber min={1} max={99999} style={{ width: "100%" }} />
         </Form.Item>
 
-        <Form.Item name="price" label="Giá" rules={[{ required: true }]}>
-          <InputNumber min={0} style={{ width: "100%" }} />
+        <Form.Item
+          name="price"
+          label="Giá"
+          rules={[
+            { required: true, message: "Giá không được trống" },
+            { pattern: /^\d+$/, message: "Giá phải là số dương" },
+          ]}
+        >
+          <InputNumber min={0} max={999999999} style={{ width: "100%" }} />
         </Form.Item>
 
-        <Form.Item name="sku" label="SKU">
+        <Form.Item
+          name="sku"
+          label="SKU"
+          rules={[{ max: 50, message: "SKU tối đa 50 ký tự" }]}
+        >
           <Input />
         </Form.Item>
 

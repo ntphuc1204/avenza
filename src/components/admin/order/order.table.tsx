@@ -312,9 +312,13 @@ const OrderTable = ({ data, accessToken }: IProps) => {
 
                     <td>
                       <Tag
-                        color={PAYMENT_STATUS_MAP[item.paymentStatus]?.color || "orange"}
+                        color={
+                          PAYMENT_STATUS_MAP[item.paymentStatus]?.color ||
+                          "orange"
+                        }
                       >
-                        {PAYMENT_STATUS_MAP[item.paymentStatus]?.label || item.paymentStatus}
+                        {PAYMENT_STATUS_MAP[item.paymentStatus]?.label ||
+                          item.paymentStatus}
                       </Tag>
                     </td>
 

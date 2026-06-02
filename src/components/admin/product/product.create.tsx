@@ -180,10 +180,9 @@ const ProductCreate = (props: IProps) => {
               label="Tên sản phẩm"
               name="name"
               rules={[
-                {
-                  required: true,
-                  message: "Vui lòng nhập tên sản phẩm",
-                },
+                { required: true, message: "Vui lòng nhập tên sản phẩm" },
+                { min: 3, message: "Tên sản phẩm tối thiểu 3 ký tự" },
+                { max: 255, message: "Tên sản phẩm tối đa 255 ký tự" },
               ]}
             >
               <Input placeholder="Nhập tên sản phẩm" />
@@ -192,14 +191,29 @@ const ProductCreate = (props: IProps) => {
 
           {/* SLUG */}
           <Col span={24} md={12}>
-            <Form.Item label="Slug" name="slug">
+            <Form.Item
+              label="Slug"
+              name="slug"
+              rules={[
+                { min: 3, message: "Slug tối thiểu 3 ký tự" },
+                { max: 255, message: "Slug tối đa 255 ký tự" },
+                {
+                  pattern: /^[a-z0-9-]+$/,
+                  message: "Slug chỉ chứa chữ cái thường, số và dấu gạch ngang",
+                },
+              ]}
+            >
               <Input placeholder="slug-san-pham" />
             </Form.Item>
           </Col>
 
           {/* DESCRIPTION */}
           <Col span={24}>
-            <Form.Item label="Mô tả" name="description">
+            <Form.Item
+              label="Mô tả"
+              name="description"
+              rules={[{ max: 2000, message: "Mô tả tối đa 2000 ký tự" }]}
+            >
               <TextArea rows={4} placeholder="Mô tả sản phẩm..." />
             </Form.Item>
           </Col>
@@ -210,9 +224,20 @@ const ProductCreate = (props: IProps) => {
               label="Giá"
               name="price"
               rules={[
+                { required: true, message: "Vui lòng nhập giá" },
                 {
-                  required: true,
-                  message: "Vui lòng nhập giá",
+                  validator: (_, value) => {
+                    if (!value || value > 0) return Promise.resolve();
+                    return Promise.reject(new Error("Giá phải lớn hơn 0"));
+                  },
+                },
+                {
+                  validator: (_, value) => {
+                    if (!value || value <= 999999999) return Promise.resolve();
+                    return Promise.reject(
+                      new Error("Giá không được vượt quá 999,999,999"),
+                    );
+                  },
                 },
               ]}
             >

@@ -10,6 +10,7 @@ import {
   message,
   notification,
   Button,
+  Switch,
 } from "antd";
 
 import { useEffect, useState } from "react";
@@ -42,6 +43,7 @@ const UserUpdate = (props: IProps) => {
         email: dataUpdate.email,
         phone: dataUpdate.phone,
         address: dataUpdate.address,
+        isActive: dataUpdate.isActive,
       });
 
       setImageFile(null);
@@ -68,10 +70,7 @@ const UserUpdate = (props: IProps) => {
       let imageUrl = dataUpdate.image || "";
 
       if (imageFile) {
-        const uploadRes = await uploadUserImage(
-          imageFile,
-          accessToken
-        );
+        const uploadRes = await uploadUserImage(imageFile, accessToken);
 
         console.log("UPLOAD RESPONSE:", uploadRes);
 
@@ -84,6 +83,7 @@ const UserUpdate = (props: IProps) => {
         name: values.name,
         phone: values.phone,
         address: values.address,
+        isActive: values.isActive,
         image: imageUrl,
       };
 
@@ -111,9 +111,7 @@ const UserUpdate = (props: IProps) => {
       notification.error({
         message: "Lỗi cập nhật người dùng",
         description:
-          error?.response?.data?.message ||
-          error?.message ||
-          "Có lỗi xảy ra",
+          error?.response?.data?.message || error?.message || "Có lỗi xảy ra",
       });
     } finally {
       setLoading(false);
@@ -152,20 +150,47 @@ const UserUpdate = (props: IProps) => {
             <Form.Item
               label="Tên người dùng"
               name="name"
-              rules={[{ required: true }]}
+              rules={[
+                { required: true, message: "Tên người dùng không được trống" },
+                { min: 2, message: "Tên tối thiểu 2 ký tự" },
+                { max: 255, message: "Tên tối đa 255 ký tự" },
+              ]}
             >
               <Input placeholder="Nhập tên" />
             </Form.Item>
           </Col>
 
           <Col span={24} md={12}>
-            <Form.Item label="Điện thoại" name="phone">
-              <Input placeholder="Nhập số điện thoại" />
+            <Form.Item
+              label="Trạng thái"
+              name="isActive"
+              valuePropName="checked"
+            >
+              <Switch checkedChildren="Hoạt động" unCheckedChildren="Khoá" />
             </Form.Item>
           </Col>
 
           <Col span={24} md={12}>
-            <Form.Item label="Địa chỉ" name="address">
+            <Form.Item
+              label="Điện thoại"
+              name="phone"
+              rules={[
+                {
+                  pattern: /^[0-9]{10,11}$/,
+                  message: "Số điện thoại phải có 10-11 chữ số",
+                },
+              ]}
+            >
+              <Input placeholder="0912345678" />
+            </Form.Item>
+          </Col>
+
+          <Col span={24} md={12}>
+            <Form.Item
+              label="Địa chỉ"
+              name="address"
+              rules={[{ max: 500, message: "Địa chỉ tối đa 500 ký tự" }]}
+            >
               <Input placeholder="Nhập địa chỉ" />
             </Form.Item>
           </Col>
@@ -175,9 +200,7 @@ const UserUpdate = (props: IProps) => {
               <Input
                 type="file"
                 accept="image/*"
-                onChange={(e) =>
-                  setImageFile(e.target.files?.[0] ?? null)
-                }
+                onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
               />
             </Form.Item>
           </Col>

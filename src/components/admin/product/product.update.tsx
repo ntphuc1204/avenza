@@ -73,8 +73,7 @@ const ProductUpdate = (props: IProps) => {
 
         categoryId: dataUpdate.categoryId?._id || dataUpdate.categoryId,
 
-        supplierId:
-          dataUpdate.supplierId?._id || dataUpdate.supplierId,
+        supplierId: dataUpdate.supplierId?._id || dataUpdate.supplierId,
 
         isFeatured: dataUpdate.isFeatured,
 
@@ -239,34 +238,95 @@ const ProductUpdate = (props: IProps) => {
         <Row gutter={[15, 15]}>
           {/* NAME */}
           <Col span={24} md={12}>
-            <Form.Item label="Tên sản phẩm" name="name">
+            <Form.Item
+              label="Tên sản phẩm"
+              name="name"
+              rules={[
+                { required: true, message: "Tên sản phẩm không được trống" },
+                { min: 3, message: "Tên sản phẩm tối thiểu 3 ký tự" },
+                { max: 255, message: "Tên sản phẩm tối đa 255 ký tự" },
+              ]}
+            >
               <Input />
             </Form.Item>
           </Col>
 
           {/* SLUG */}
           <Col span={24} md={12}>
-            <Form.Item label="Slug" name="slug">
+            <Form.Item
+              label="Slug"
+              name="slug"
+              rules={[
+                { min: 3, message: "Slug tối thiểu 3 ký tự" },
+                { max: 255, message: "Slug tối đa 255 ký tự" },
+                {
+                  pattern: /^[a-z0-9-]+$/,
+                  message: "Slug chỉ chứa chữ cái thường, số và dấu gạch ngang",
+                },
+              ]}
+            >
               <Input />
             </Form.Item>
           </Col>
 
           {/* DESCRIPTION */}
           <Col span={24}>
-            <Form.Item label="Mô tả" name="description">
+            <Form.Item
+              label="Mô tả"
+              name="description"
+              rules={[{ max: 2000, message: "Mô tả tối đa 2000 ký tự" }]}
+            >
               <TextArea rows={4} />
             </Form.Item>
           </Col>
 
           {/* PRICE */}
           <Col span={24} md={12}>
-            <Form.Item label="Giá bán" name="price">
+            <Form.Item
+              label="Giá bán"
+              name="price"
+              rules={[
+                {
+                  validator: (_, value) => {
+                    if (!value || value > 0) return Promise.resolve();
+                    return Promise.reject(new Error("Giá bán phải lớn hơn 0"));
+                  },
+                },
+                {
+                  validator: (_, value) => {
+                    if (!value || value <= 999999999) return Promise.resolve();
+                    return Promise.reject(
+                      new Error("Giá bán không được vượt quá 999,999,999"),
+                    );
+                  },
+                },
+              ]}
+            >
               <InputNumber style={{ width: "100%" }} min={0} />
             </Form.Item>
           </Col>
 
           <Col span={24} md={12}>
-            <Form.Item label="Giá nhập" name="importPrice">
+            <Form.Item
+              label="Giá nhập"
+              name="importPrice"
+              rules={[
+                {
+                  validator: (_, value) => {
+                    if (!value || value > 0) return Promise.resolve();
+                    return Promise.reject(new Error("Giá nhập phải lớn hơn 0"));
+                  },
+                },
+                {
+                  validator: (_, value) => {
+                    if (!value || value <= 999999999) return Promise.resolve();
+                    return Promise.reject(
+                      new Error("Giá nhập không được vượt quá 999,999,999"),
+                    );
+                  },
+                },
+              ]}
+            >
               <InputNumber style={{ width: "100%" }} min={0} />
             </Form.Item>
           </Col>
