@@ -156,6 +156,9 @@ const OrdersPage = () => {
       case "PENDING":
         return "processing";
 
+      case "CONFIRMED":
+        return "processing";
+
       case "CANCELLED":
         return "error";
 
@@ -172,6 +175,9 @@ const OrdersPage = () => {
     switch (orderStatus) {
       case "PENDING":
         return "ĐANG CHỜ XÁC NHẬN";
+
+      case "CONFIRMED":
+        return "ĐÃ XÁC NHẬN";
 
       case "PROCESSING":
         return "ĐANG XỬ LÝ";

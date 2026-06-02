@@ -78,9 +78,9 @@ const ProfilePage = () => {
         Authorization: `Bearer ${accessToken}`,
       },
       body: {
-        name: values.name,
-        phone: values.phone,
-        address: values.address,
+        name: values.name?.trim(),
+        phone: values.phone?.trim(),
+        address: values.address?.trim(),
       },
     });
 
@@ -187,6 +187,8 @@ const ProfilePage = () => {
               form={form}
               layout="vertical"
               onFinish={handleSaveProfile}
+              validateTrigger={["onBlur", "onSubmit"]}
+              scrollToFirstError
               initialValues={{
                 name: profile?.name || "",
                 email: profile?.email || "",
@@ -201,16 +203,54 @@ const ProfilePage = () => {
               <Form.Item
                 label="Họ và tên"
                 name="name"
-                rules={[{ required: true, message: "Nhập họ và tên" }]}
+                rules={[
+                  {
+                    required: true,
+                    message: "Vui lòng nhập họ tên",
+                  },
+                  {
+                    validator: (_, value) => {
+                      if (!value || value.trim().length >= 2) {
+                        return Promise.resolve();
+                      }
+
+                      return Promise.reject(
+                        new Error("Họ tên phải có ít nhất 2 ký tự"),
+                      );
+                    },
+                  },
+                ]}
               >
                 <Input placeholder="Nhập họ và tên" />
               </Form.Item>
 
-              <Form.Item label="Số điện thoại" name="phone">
-                <Input placeholder="Nhập số điện thoại" />
+              <Form.Item
+                label="Số điện thoại"
+                name="phone"
+                rules={[
+                  {
+                    required: true,
+                    message: "Vui lòng nhập số điện thoại",
+                  },
+                  {
+                    pattern: /^(0[3|5|7|8|9])[0-9]{8}$/,
+                    message: "Số điện thoại không hợp lệ",
+                  },
+                ]}
+              >
+                <Input maxLength={10} placeholder="Nhập số điện thoại" />
               </Form.Item>
 
-              <Form.Item label="Địa chỉ" name="address">
+              <Form.Item
+                label="Địa chỉ"
+                name="address"
+                rules={[
+                  {
+                    required: true,
+                    message: "Vui lòng nhập địa chỉ",
+                  },
+                ]}
+              >
                 <Input.TextArea rows={4} placeholder="Nhập địa chỉ" />
               </Form.Item>
 
@@ -230,6 +270,8 @@ const ProfilePage = () => {
               form={passwordForm}
               layout="vertical"
               onFinish={handleChangePassword}
+              validateTrigger={["onBlur", "onSubmit"]}
+              scrollToFirstError
             >
               <Form.Item
                 label="Mật khẩu hiện tại"
@@ -242,7 +284,36 @@ const ProfilePage = () => {
               <Form.Item
                 label="Mật khẩu mới"
                 name="newPassword"
-                rules={[{ required: true, message: "Nhập mật khẩu mới" }]}
+                rules={[
+                  {
+                    required: true,
+                    message: "Nhập mật khẩu mới",
+                  },
+                  {
+                    min: 8,
+                    message: "Mật khẩu tối thiểu 8 ký tự",
+                  },
+                  {
+                    pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/,
+                    message: "Mật khẩu phải chứa chữ hoa, chữ thường và số",
+                  },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (
+                        !value ||
+                        value !== getFieldValue("currentPassword")
+                      ) {
+                        return Promise.resolve();
+                      }
+
+                      return Promise.reject(
+                        new Error(
+                          "Mật khẩu mới không được trùng mật khẩu hiện tại",
+                        ),
+                      );
+                    },
+                  }),
+                ]}
               >
                 <Input.Password placeholder="Mật khẩu mới" />
               </Form.Item>
@@ -250,7 +321,24 @@ const ProfilePage = () => {
               <Form.Item
                 label="Xác nhận mật khẩu mới"
                 name="confirmPassword"
-                rules={[{ required: true, message: "Xác nhận mật khẩu mới" }]}
+                dependencies={["newPassword"]}
+                rules={[
+                  {
+                    required: true,
+                    message: "Xác nhận mật khẩu mới",
+                  },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (!value || getFieldValue("newPassword") === value) {
+                        return Promise.resolve();
+                      }
+
+                      return Promise.reject(
+                        new Error("Mật khẩu xác nhận không khớp"),
+                      );
+                    },
+                  }),
+                ]}
               >
                 <Input.Password placeholder="Xác nhận mật khẩu mới" />
               </Form.Item>

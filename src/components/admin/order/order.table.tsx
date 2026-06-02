@@ -11,7 +11,7 @@ import {
   Popconfirm,
 } from "antd";
 
-import { useState } from "react";
+import React, { useState, Fragment } from "react";
 
 import { useRouter } from "next/navigation";
 
@@ -37,7 +37,7 @@ interface IShippingAddress {
 interface IOrder {
   _id: string;
 
-  userId?: any;
+  userId?: any | { name: string; email: string; phone: string };
 
   products: IOrderProduct[];
 
@@ -80,11 +80,27 @@ interface IProps {
 
 const STATUS_OPTIONS = [
   "PENDING",
+  "CONFIRMED",
   "PROCESSING",
   "DELIVERING",
   "DELIVERED",
   "CANCELLED",
 ];
+
+const STATUS_MAP: Record<string, { label: string; color: string }> = {
+  PENDING: { label: "Chờ xử lý", color: "orange" },
+  CONFIRMED: { label: "Đã xác nhận", color: "blue" },
+  PROCESSING: { label: "Đang xử lý", color: "blue" },
+  DELIVERING: { label: "Đang giao", color: "cyan" },
+  DELIVERED: { label: "Đã giao", color: "green" },
+  CANCELLED: { label: "Hủy", color: "red" },
+};
+
+const PAYMENT_STATUS_MAP: Record<string, { label: string; color: string }> = {
+  PENDING: { label: "Chờ thanh toán", color: "orange" },
+  SUCCESS: { label: "Đã thanh toán", color: "green" },
+  FAILED: { label: "Thanh toán thất bại", color: "red" },
+};
 
 const OrderTable = ({ data, accessToken }: IProps) => {
   const orders = data?.results || [];
@@ -186,6 +202,18 @@ const OrderTable = ({ data, accessToken }: IProps) => {
     });
   };
 
+  const handlePaginationChange = (page: number, pageSize?: number) => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      params.set("page", String(page));
+      if (pageSize) params.set("pageSize", String(pageSize));
+
+      router.push(`${window.location.pathname}?${params.toString()}`);
+    } catch (e) {
+      // fallback: do nothing
+    }
+  };
+
   return (
     <div className="page-wrapper">
       <div className="page-header">
@@ -221,9 +249,8 @@ const OrderTable = ({ data, accessToken }: IProps) => {
               const isExpanded = expandedRows.includes(item._id);
 
               return (
-                <>
+                <Fragment key={item._id}>
                   <tr
-                    key={item._id}
                     onClick={() => {
                       if (isExpanded) {
                         setExpandedRows(
@@ -236,13 +263,18 @@ const OrderTable = ({ data, accessToken }: IProps) => {
                     style={{ cursor: "pointer" }}
                   >
                     <td>
-                      <div className="table-subtext">{item._id}</div>
+                      <div className="table-subtext">
+                        {item._id?.slice(-8) || item._id}
+                      </div>
                     </td>
 
                     <td>
                       {typeof item.userId === "string"
                         ? item.userId
-                        : item.userId?.email || item.userId?._id || "-"}
+                        : item.userId?.name ||
+                          item.userId?.email ||
+                          item.userId?._id ||
+                          "-"}
                     </td>
 
                     <td>
@@ -261,14 +293,11 @@ const OrderTable = ({ data, accessToken }: IProps) => {
                       >
                         <Tag
                           color={
-                            item.orderStatus === "DELIVERED"
-                              ? "green"
-                              : item.orderStatus === "CANCELLED"
-                                ? "red"
-                                : "orange"
+                            STATUS_MAP[item.orderStatus]?.color || "orange"
                           }
                         >
-                          {item.orderStatus}
+                          {STATUS_MAP[item.orderStatus]?.label ||
+                            item.orderStatus}
                         </Tag>
 
                         {item.cancelStatus === "REQUESTED" && (
@@ -283,15 +312,9 @@ const OrderTable = ({ data, accessToken }: IProps) => {
 
                     <td>
                       <Tag
-                        color={
-                          item.paymentStatus === "SUCCESS"
-                            ? "green"
-                            : item.paymentStatus === "FAILED"
-                              ? "red"
-                              : "orange"
-                        }
+                        color={PAYMENT_STATUS_MAP[item.paymentStatus]?.color || "orange"}
                       >
-                        {item.paymentStatus}
+                        {PAYMENT_STATUS_MAP[item.paymentStatus]?.label || item.paymentStatus}
                       </Tag>
                     </td>
 
@@ -381,7 +404,7 @@ const OrderTable = ({ data, accessToken }: IProps) => {
                           }
                           options={STATUS_OPTIONS.map((status) => ({
                             value: status,
-                            label: status,
+                            label: STATUS_MAP[status]?.label || status,
                           }))}
                         />
                       </div>
@@ -431,7 +454,7 @@ const OrderTable = ({ data, accessToken }: IProps) => {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               );
             })}
           </tbody>
@@ -443,6 +466,7 @@ const OrderTable = ({ data, accessToken }: IProps) => {
           current={meta.current}
           pageSize={meta.pageSize}
           total={meta.total}
+          onChange={handlePaginationChange}
           showSizeChanger
           showQuickJumper
           pageSizeOptions={["10", "20", "50", "100"]}

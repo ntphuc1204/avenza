@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Card, Col, Rate, Row, Space, Typography, message } from "antd";
+import { Button, Card, Row, Rate, Space, Typography, message } from "antd";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -18,7 +18,9 @@ interface IProductCardProps {
 const ProductCard = ({ product, onAddToCart }: IProductCardProps) => {
   const { data: session } = useSession();
   const router = useRouter();
+
   const [loading, setLoading] = useState(false);
+  const [addedToCart, setAddedToCart] = useState(false);
 
   const addToCart = async () => {
     if (!session?.user?.access_token) {
@@ -44,7 +46,10 @@ const ProductCard = ({ product, onAddToCart }: IProductCardProps) => {
       if (res?.data) {
         message.success("Đã thêm vào giỏ hàng");
 
-        // realtime badge cart
+        // Đổi nút thành "Xem giỏ hàng"
+        setAddedToCart(true);
+
+        // Cập nhật badge cart realtime
         window.dispatchEvent(new Event("cartUpdated"));
 
         onAddToCart?.();
@@ -52,10 +57,20 @@ const ProductCard = ({ product, onAddToCart }: IProductCardProps) => {
         message.error(res?.message || "Thêm vào giỏ hàng thất bại");
       }
     } catch (error) {
+      console.error(error);
       message.error("Có lỗi xảy ra");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleButtonClick = () => {
+    if (addedToCart) {
+      router.push("/cart");
+      return;
+    }
+
+    addToCart();
   };
 
   const imageUrlRaw =
@@ -83,7 +98,11 @@ const ProductCard = ({ product, onAddToCart }: IProductCardProps) => {
             <img
               src={imageUrl}
               alt={product.name}
-              style={{ width: "100%", height: "auto", objectFit: "cover" }}
+              style={{
+                width: "100%",
+                height: "auto",
+                objectFit: "cover",
+              }}
             />
           </div>
         </Link>
@@ -110,7 +129,6 @@ const ProductCard = ({ product, onAddToCart }: IProductCardProps) => {
           {product.categoryId?.name || "Danh mục chung"}
         </Text>
 
-        {/* ⭐ FIX RATING CHUẨN REALTIME */}
         <Row align="middle" justify="space-between">
           <Rate
             allowHalf
@@ -124,18 +142,32 @@ const ProductCard = ({ product, onAddToCart }: IProductCardProps) => {
           </Text>
         </Row>
 
-        <Text type={product.stock ? "success" : "danger"}>
+        <Text type={product.stock > 0 ? "success" : "danger"}>
           {product.stock > 0 ? `Còn ${product.stock} sản phẩm` : "Hết hàng"}
         </Text>
 
         <Button
-          type="primary"
           block
-          onClick={addToCart}
           loading={loading}
           disabled={product.stock <= 0}
+          onClick={handleButtonClick}
+          type={addedToCart ? "default" : "primary"}
+          style={
+            addedToCart
+              ? {
+                  background: "linear-gradient(135deg, #52c41a, #73d13d)",
+                  border: "none",
+                  color: "#fff",
+                  fontWeight: 700,
+                  boxShadow: "0 4px 12px rgba(82,196,26,.3)",
+                  transition: "all .3s ease",
+                }
+              : {
+                  fontWeight: 600,
+                }
+          }
         >
-          Thêm vào giỏ
+          {addedToCart ? "🛒 Xem giỏ hàng" : "Thêm vào giỏ"}
         </Button>
       </Space>
     </Card>

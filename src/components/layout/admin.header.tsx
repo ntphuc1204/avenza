@@ -52,16 +52,6 @@ const AdminHeader = (props: any) => {
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Button
-            type="text"
-            icon={collapseMenu ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={() => setCollapseMenu(!collapseMenu)}
-            style={{
-              fontSize: "16px",
-              width: 64,
-              height: 64,
-            }}
-          />
-          <Button
             type="default"
             icon={<HomeOutlined />}
             onClick={() => router.push("/")}
@@ -80,7 +70,7 @@ const AdminHeader = (props: any) => {
             }}
           >
             <Space>
-              Welcome {session?.user?.email ?? ""}
+              {session?.user?.email ?? ""}
               <DownOutlined />
             </Space>
           </a>

@@ -35,7 +35,7 @@ type MenuItem = Required<MenuProps>["items"][number];
 const AdminSideBar = () => {
   const { Sider } = Layout;
 
-  const { collapseMenu } = useContext(AdminContext)!;
+  const { collapseMenu, setCollapseMenu } = useContext(AdminContext)!;
 
   const { data: session } = useSession();
 
@@ -106,94 +106,89 @@ const AdminSideBar = () => {
       socket.disconnect();
     };
   }, [session]);
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setCollapseMenu(true);
+      }
+    };
 
+    handleResize();
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [setCollapseMenu]);
   const items: MenuItem[] = [
     {
       key: "grp",
       label: "Avenza",
-
       type: "group",
-
       children: [
         {
           key: "dashboard",
-
-          label: <Link href="/dashboard">Dashboard</Link>,
-
+          label: <Link href="/dashboard">Bảng điều khiển</Link>,
           icon: <AppstoreOutlined />,
         },
 
         {
           key: "users",
-
-          label: <Link href="/dashboard/user">Manage Users</Link>,
-
+          label: <Link href="/dashboard/user">Quản lý người dùng</Link>,
           icon: <TeamOutlined />,
         },
 
         {
           key: "product",
-
-          label: <Link href="/dashboard/product">Manage Products</Link>,
-
+          label: <Link href="/dashboard/product">Quản lý sản phẩm</Link>,
           icon: <ShopOutlined />,
         },
 
         {
           key: "categories",
-
-          label: <Link href="/dashboard/categories">Manage Categories</Link>,
-
+          label: <Link href="/dashboard/categories">Quản lý danh mục</Link>,
           icon: <ProfileOutlined />,
         },
 
         {
           key: "suppliers",
-
-          label: <Link href="/dashboard/suppliers">Manage Suppliers</Link>,
-
+          label: <Link href="/dashboard/suppliers">Quản lý nhà cung cấp</Link>,
           icon: <TruckOutlined />,
         },
 
         {
           key: "stock-imports",
-
-          label: <Link href="/dashboard/stock-imports">Import goods</Link>,
-
+          label: <Link href="/dashboard/stock-imports">Nhập hàng</Link>,
           icon: <ImportOutlined />,
         },
 
         {
           key: "orders",
-
-          label: <Link href="/dashboard/orders">Manage Orders</Link>,
-
+          label: <Link href="/dashboard/orders">Quản lý đơn hàng</Link>,
           icon: <ShopOutlined />,
         },
+
         {
           key: "reviews",
-
-          label: <Link href="/dashboard/reviews">Manage Reviews</Link>,
-
+          label: <Link href="/dashboard/reviews">Quản lý đánh giá</Link>,
           icon: <CommentOutlined />,
         },
+
         {
           key: "discounts",
-
-          label: <Link href="/dashboard/discounts">Manage Vouchers</Link>,
-
+          label: <Link href="/dashboard/discounts">Quản lý mã giảm giá</Link>,
           icon: <GiftOutlined />,
         },
+
         {
           key: "banners",
-
-          label: <Link href="/dashboard/banners">Manage Banners</Link>,
-
+          label: <Link href="/dashboard/banners">Quản lý banner</Link>,
           icon: <PictureOutlined />,
         },
+
         {
           key: "chat",
-
           label: (
             <Link href="/dashboard/chat">
               <div
@@ -204,7 +199,8 @@ const AdminSideBar = () => {
                   width: "100%",
                 }}
               >
-                <span>Chat Support</span>
+                <span>Hỗ trợ chat</span>
+
                 {chatUnreadCount > 0 && (
                   <Badge
                     count={chatUnreadCount}
@@ -215,12 +211,11 @@ const AdminSideBar = () => {
               </div>
             </Link>
           ),
-
           icon: <CommentOutlined />,
         },
+
         {
           key: "notifications",
-
           label: (
             <Link href="/dashboard/notifications">
               <div
@@ -231,7 +226,7 @@ const AdminSideBar = () => {
                   width: "100%",
                 }}
               >
-                <span>Notifications</span>
+                <span>Thông báo</span>
 
                 {notificationCount > 0 && (
                   <Badge count={notificationCount} size="small" />
@@ -239,41 +234,33 @@ const AdminSideBar = () => {
               </div>
             </Link>
           ),
-
           icon: <BellOutlined />,
         },
 
         {
           key: "ai",
-
-          label: <Link href="/dashboard/ai">AI Console</Link>,
-
+          label: <Link href="/dashboard/ai">Trợ lý AI</Link>,
           icon: <RobotOutlined />,
         },
       ],
     },
   ];
-
   return (
     <Sider
       collapsible
       collapsed={collapseMenu}
       collapsedWidth={80}
-      width="auto"
-      breakpoint="lg"
+      width={200}
+      breakpoint="md"
+      onBreakpoint={(broken) => {
+        setCollapseMenu(broken);
+      }}
+      trigger={null}
       style={{
         minHeight: "100vh",
-
         position: "sticky",
-
-        left: 0,
-
         top: 0,
-
-        overflow: "auto",
-
-        minWidth:
-          typeof window !== "undefined" && window.innerWidth > 1000 ? 300 : 80,
+        left: 0,
       }}
     >
       <Menu

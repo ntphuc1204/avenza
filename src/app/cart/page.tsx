@@ -6,7 +6,6 @@ import {
   Col,
   Form,
   Input,
-  InputNumber,
   List,
   Radio,
   Row,
@@ -19,7 +18,7 @@ import {
   Select,
   Tag,
 } from "antd";
-
+import { Tooltip } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -374,8 +373,8 @@ const CartPage = () => {
     <GuestLayout>
       <Title level={3}>Giỏ hàng</Title>
 
-      <Row gutter={24}>
-        <Col span={16}>
+      <Row gutter={[24, 24]}>
+        <Col xs={24} sm={24} md={24} lg={16} xl={16}>
           <Card loading={loading}>
             <List
               dataSource={cart?.items || []}
@@ -391,116 +390,191 @@ const CartPage = () => {
                     title={item.name}
                     description={
                       <Space>
-                        <InputNumber
-                          min={1}
-                          value={item.quantity}
-                          onChange={(v) =>
-                            updateItem(item.productId, Number(v))
+                        <Button
+                          size="small"
+                          disabled={item.quantity <= 1}
+                          onClick={() =>
+                            updateItem(item.productId, item.quantity - 1)
                           }
-                        />
-                        <Text>{item.price.toLocaleString("vi-VN")} ₫</Text>
+                        >
+                          -
+                        </Button>
+
+                        <Text strong>{item.quantity}</Text>
+
+                        <Tooltip
+                          title={
+                            item.quantity === item.stock
+                              ? `Chỉ còn ${item.stock} sản phẩm`
+                              : ""
+                          }
+                        >
+                          <Button
+                            size="small"
+                            disabled={item.quantity >= item.stock}
+                            onClick={() =>
+                              updateItem(item.productId, item.quantity + 1)
+                            }
+                          >
+                            +
+                          </Button>
+                        </Tooltip>
                       </Space>
                     }
                   />
                 </List.Item>
               )}
             />
-
-            <Button danger onClick={clearCart}>
+            <Button danger block size="large" onClick={clearCart}>
               Xóa giỏ hàng
             </Button>
           </Card>
         </Col>
 
-        <Col span={8}>
-          <Card>
-            <Statistic
-              title="Tổng tiền"
-              value={cart?.totalPrice || 0}
-              suffix="₫"
-            />
-
-            <Divider />
-
-            <Space direction="vertical" style={{ width: "100%" }}>
-              <Text strong>Voucher</Text>
-              <Select
-                allowClear
-                loading={discountLoading}
-                placeholder="Chọn voucher đã nhận"
-                style={{ width: "100%" }}
-                onChange={(code) => {
-                  if (code) {
-                    applyDiscount(code);
-                  } else {
-                    setSelectedDiscount(null);
-                  }
-                }}
-                options={myDiscounts
-                  .filter((item) => item.discountId)
-                  .map((item) => ({
-                    label: `${item.discountId.code} - ${item.discountId.title}`,
-                    value: item.discountId.code,
-                  }))}
+        <Col xs={24} sm={24} md={24} lg={8} xl={8}>
+          <div
+            style={{
+              position: "sticky",
+              top: 24,
+            }}
+          >
+            <Card>
+              <Statistic
+                title="Tổng tiền"
+                value={cart?.totalPrice || 0}
+                suffix="₫"
               />
-              <Button type="link" onClick={() => router.push("/my-discounts")}>
-                Xem voucher của tôi
-              </Button>
 
-              {selectedDiscount ? (
-                <div
+              <Divider />
+
+              <Space direction="vertical" style={{ width: "100%" }}>
+                <Text strong>Voucher</Text>
+                <Select
+                  allowClear
+                  loading={discountLoading}
+                  placeholder="Chọn voucher đã nhận"
+                  style={{ width: "100%" }}
+                  onChange={(code) => {
+                    if (code) {
+                      applyDiscount(code);
+                    } else {
+                      setSelectedDiscount(null);
+                    }
+                  }}
+                  options={myDiscounts
+                    .filter((item) => item.discountId)
+                    .map((item) => ({
+                      label: `${item.discountId.code} - ${item.discountId.title}`,
+                      value: item.discountId.code,
+                    }))}
+                />
+                <Button
+                  type="link"
+                  onClick={() => router.push("/my-discounts")}
+                >
+                  Xem voucher của tôi
+                </Button>
+
+                {selectedDiscount ? (
+                  <div
+                    style={{
+                      background: "#fff7e6",
+                      border: "1px solid #ffd591",
+                      borderRadius: 12,
+                      padding: 12,
+                    }}
+                  >
+                    <Space direction="vertical" size={4}>
+                      <Tag color="orange">{selectedDiscount.discount.code}</Tag>
+                      <Text>
+                        Giảm: {discountAmount.toLocaleString("vi-VN")} đ
+                      </Text>
+                      <Text strong>
+                        Còn thanh toán: {finalPrice.toLocaleString("vi-VN")} đ
+                      </Text>
+                    </Space>
+                  </div>
+                ) : null}
+              </Space>
+
+              <Divider />
+
+              <Form form={form} onFinish={onFinish} layout="vertical">
+                <Form.Item label="Họ tên">
+                  <Input value={userProfile?.name} disabled />
+                </Form.Item>
+
+                <Form.Item label="Số điện thoại">
+                  <Input value={userProfile?.phone} disabled />
+                </Form.Item>
+
+                <Form.Item label="Địa chỉ">
+                  <Input.TextArea
+                    value={userProfile?.address}
+                    disabled
+                    autoSize={{ minRows: 2, maxRows: 4 }}
+                  />
+                </Form.Item>
+
+                <Button
+                  type="link"
+                  style={{ padding: 0 }}
+                  onClick={() => router.push("/profile")}
+                >
+                  Cập nhật thông tin
+                </Button>
+
+                <Form.Item name="paymentMethod" initialValue="COD">
+                  <Radio.Group
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  >
+                    <Radio value="COD">COD</Radio>
+                    <Radio value="MOMO">MoMo</Radio>
+                  </Radio.Group>
+                </Form.Item>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  block
+                  size="large"
+                  loading={checkoutLoading}
+                  disabled={isMissingProfile}
                   style={{
-                    background: "#fff7e6",
-                    border: "1px solid #ffd591",
-                    borderRadius: 12,
-                    padding: 12,
+                    height: 48,
+                    fontWeight: 600,
                   }}
                 >
-                  <Space direction="vertical" size={4}>
-                    <Tag color="orange">{selectedDiscount.discount.code}</Tag>
-                    <Text>
-                      Giảm: {discountAmount.toLocaleString("vi-VN")} đ
+                  Đặt hàng
+                </Button>
+                {isMissingProfile && (
+                  <div
+                    style={{
+                      marginBottom: 16,
+                      padding: 12,
+                      background: "#fff2f0",
+                      border: "1px solid #ffccc7",
+                      borderRadius: 8,
+                    }}
+                  >
+                    <Text type="danger">
+                      Bạn cần cập nhật đầy đủ họ tên, số điện thoại và địa chỉ
+                      trước khi đặt hàng.
                     </Text>
-                    <Text strong>
-                      Còn thanh toán: {finalPrice.toLocaleString("vi-VN")} đ
-                    </Text>
-                  </Space>
-                </div>
-              ) : null}
-            </Space>
 
-            <Divider />
+                    <br />
 
-            <Form form={form} onFinish={onFinish}>
-              <Form.Item name="recipientName" rules={[{ required: true }]}>
-                <Input placeholder="Tên người nhận" />
-              </Form.Item>
-
-              <Form.Item name="phone" rules={[{ required: true }]}>
-                <Input placeholder="Số điện thoại" />
-              </Form.Item>
-
-              <Form.Item name="address" rules={[{ required: true }]}>
-                <Input.TextArea placeholder="Địa chỉ" />
-              </Form.Item>
-
-              <Form.Item name="paymentMethod" initialValue="COD">
-                <Radio.Group onChange={(e) => setPaymentMethod(e.target.value)}>
-                  <Radio value="COD">COD</Radio>
-                  <Radio value="MOMO">MoMo</Radio>
-                </Radio.Group>
-              </Form.Item>
-
-              <Button
-                type="primary"
-                htmlType="submit"
-                block
-                loading={checkoutLoading}
-              >
-                Đặt hàng
-              </Button>
-            </Form>
-          </Card>
+                    <Button
+                      type="link"
+                      style={{ padding: 0 }}
+                      onClick={() => router.push("/profile")}
+                    >
+                      Cập nhật thông tin
+                    </Button>
+                  </div>
+                )}
+              </Form>
+            </Card>
+          </div>
         </Col>
       </Row>
     </GuestLayout>

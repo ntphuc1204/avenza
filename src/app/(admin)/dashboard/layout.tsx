@@ -26,7 +26,7 @@ const AdminLayout = async ({
   return (
     <AdminContextProvider>
       <div className="admin-layout">
-        <div className="left-side" style={{ minWidth: 80 }}>
+        <div className="left-side" style={{ width: 80 }}>
           <AdminSideBar />
         </div>
         <div className="right-side">

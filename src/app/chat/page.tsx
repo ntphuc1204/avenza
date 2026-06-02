@@ -35,8 +35,14 @@ const ChatPage = () => {
 
   const typingTimeoutRef = useRef<any>(null);
 
+  // =========================
+  // INIT
+  // =========================
   useEffect(() => {
     if (!session?.user?.access_token) return;
+
+    // tránh connect nhiều lần
+    if (socketRef.current) return;
 
     loadMessages();
 
@@ -47,7 +53,9 @@ const ChatPage = () => {
     return cleanup;
   }, [session]);
 
-  // auto scroll newest
+  // =========================
+  // AUTO SCROLL
+  // =========================
   useEffect(() => {
     scrollToBottom(false);
   }, [messages]);
@@ -61,6 +69,9 @@ const ChatPage = () => {
     }
   };
 
+  // =========================
+  // LOAD MESSAGES
+  // =========================
   const loadMessages = async () => {
     if (!session?.user?.access_token) return;
 
@@ -83,11 +94,18 @@ const ChatPage = () => {
     setLoading(false);
   };
 
+  // =========================
+  // SOCKET
+  // =========================
   const connectSocket = () => {
     try {
+      if (socketRef.current?.connected) return;
+
       const socket = io(
         process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001",
         {
+          transports: ["websocket"],
+
           query: {
             userId: session?.user?._id,
             role: "USER",
@@ -99,24 +117,59 @@ const ChatPage = () => {
         console.log("Chat connected");
       });
 
+      socket.on("disconnect", () => {
+        console.log("Chat disconnected");
+      });
+
+      // =========================
+      // RECEIVE MESSAGE
+      // =========================
       socket.on("chat:message", (data: any) => {
         setMessages((prev) => {
-          try {
-            if (data?.tempId) {
-              const filtered = prev.filter((m) => m._tempId !== data.tempId);
+          // check duplicate mạnh hơn
+          const existed = prev.some((m) => {
+            // duplicate theo _id
+            if (data?._id && m?._id === data._id) {
+              return true;
+            }
 
-              if (data._id && filtered.some((m) => m._id === data._id)) {
-                return filtered;
+            // duplicate theo tempId
+            if (data?.tempId && m?._tempId === data.tempId) {
+              return true;
+            }
+
+            // duplicate theo content + time
+            if (m.message === data.message && m.sender === data.sender) {
+              const oldTime = new Date(m.createdAt).getTime();
+
+              const newTime = new Date(data.createdAt).getTime();
+
+              if (Math.abs(oldTime - newTime) < 3000) {
+                return true;
               }
-
-              return [...filtered, data];
             }
 
-            if (data?._id && prev.some((m) => m._id === data._id)) {
-              return prev;
-            }
-          } catch (e) {}
+            return false;
+          });
 
+          // replace temp message
+          if (data?.tempId) {
+            return prev.map((m) =>
+              m._tempId === data.tempId
+                ? {
+                    ...data,
+                    pending: false,
+                  }
+                : m,
+            );
+          }
+
+          // nếu đã tồn tại thì bỏ qua
+          if (existed) {
+            return prev;
+          }
+
+          // add message mới
           return [...prev, data];
         });
 
@@ -125,6 +178,9 @@ const ChatPage = () => {
         }, 50);
       });
 
+      // =========================
+      // TYPING
+      // =========================
       socket.on("chat:typing", (data: any) => {
         if (data?.from === "ADMIN" || data?.from === undefined) {
           setAdminTyping(!!data.isTyping);
@@ -135,24 +191,32 @@ const ChatPage = () => {
 
       return () => {
         socket.disconnect();
+        socketRef.current = null;
       };
     } catch (e) {
       console.error("Socket connection failed", e);
     }
   };
 
+  // =========================
+  // SEND MESSAGE
+  // =========================
   const handleSend = async () => {
+    // chống spam enter
+    if (sending) return;
+
     if (!input.trim() || !session?.user?.access_token) return;
 
     setSending(true);
 
     try {
-      const currentInput = input;
+      const currentInput = input.trim();
 
       const tempId = `t-${Date.now()}-${Math.random()
         .toString(36)
         .slice(2, 9)}`;
 
+      // temp message
       const tempMsg = {
         _tempId: tempId,
         message: currentInput,
@@ -161,6 +225,7 @@ const ChatPage = () => {
         pending: true,
       };
 
+      // add local message
       setMessages((prev) => [...prev, tempMsg]);
 
       setInput("");
@@ -177,6 +242,7 @@ const ChatPage = () => {
         session.user.access_token,
       );
 
+      // fail
       if (!(res?.data || res)) {
         setMessages((prev) => prev.filter((m) => m._tempId !== tempId));
 
@@ -191,6 +257,9 @@ const ChatPage = () => {
     setSending(false);
   };
 
+  // =========================
+  // TYPING EMIT
+  // =========================
   const handleTypingEmit = (isTyping: boolean) => {
     try {
       if (!socketRef.current) return;
@@ -203,6 +272,9 @@ const ChatPage = () => {
     } catch (e) {}
   };
 
+  // =========================
+  // NOT LOGIN
+  // =========================
   if (!session) {
     return (
       <GuestLayout>
@@ -222,6 +294,9 @@ const ChatPage = () => {
     );
   }
 
+  // =========================
+  // UI
+  // =========================
   return (
     <GuestLayout>
       <div
@@ -266,9 +341,9 @@ const ChatPage = () => {
               <Empty description="Bắt đầu cuộc trò chuyện" />
             ) : (
               <>
-                {messages.map((msg, i) => (
+                {messages.map((msg, index) => (
                   <div
-                    key={msg._id || i}
+                    key={msg._id || msg._tempId || `${msg.createdAt}-${index}`}
                     style={{
                       marginBottom: 12,
                       display: "flex",
@@ -299,6 +374,7 @@ const ChatPage = () => {
                         borderRadius: 14,
                         wordBreak: "break-word",
                         boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
+                        opacity: msg.pending ? 0.7 : 1,
                       }}
                     >
                       <div

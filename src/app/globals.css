@@ -13,8 +13,36 @@ body {
   color: #000;
   
 }
-.admin-layout{
-  display: flex;
+.admin-layout {
+  display: grid;
+  grid-template-columns: 14rem minmax(0, 1fr);
+  min-height: 100vh;
+}
+@media (max-width: 768px) {
+  .admin-layout {
+    grid-template-columns: 80px 1fr;
+  }
+
+  .ant-layout-sider {
+    width: 80px !important;
+    min-width: 80px !important;
+    max-width: 80px !important;
+    flex: 0 0 80px !important;
+  }
+
+  .right-side {
+    width: 100%;
+    overflow-x: auto;
+  }
+}
+.left-side {
+  width: 80px;
+}
+
+.right-side {
+  min-width: 0;
+  width: 100%;
+  overflow-x: hidden;
 }
 .dashboard-layout {
   display: flex;
@@ -44,7 +72,7 @@ body {
   overflow-x: hidden;
 }
 .right-side{
-  width: 90%;
+  width: 100%;
 }
 /* =========================
    PAGE
