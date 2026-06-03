@@ -238,7 +238,7 @@ const ProfilePage = () => {
                   },
                 ]}
               >
-                <Input maxLength={10} placeholder="Nhập số điện thoại" />
+                <Input placeholder="Nhập số điện thoại" />
               </Form.Item>
 
               <Form.Item

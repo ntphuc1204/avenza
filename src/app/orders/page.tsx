@@ -16,7 +16,10 @@ import {
   Form,
   Select,
   Input,
+  Tooltip,
 } from "antd";
+
+import { CopyOutlined } from "@ant-design/icons";
 
 import { useEffect, useState } from "react";
 
@@ -38,6 +41,7 @@ const OrdersPage = () => {
   const [orders, setOrders] = useState<any[]>([]);
 
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const [cancelModal, setCancelModal] = useState(false);
 
@@ -56,7 +60,23 @@ const OrdersPage = () => {
     "Khác",
   ];
 
-  const loadOrders = async () => {
+  const PAYMENT_STATUS_LABEL: Record<string, string> = {
+    PENDING: "Chờ thanh toán",
+    SUCCESS: "Đã thanh toán",
+    FAILED: "Thanh toán thất bại",
+    REFUND_PENDING: "Đang hoàn tiền",
+    REFUNDED: "Đã hoàn tiền",
+  };
+
+  const PAYMENT_STATUS_COLOR: Record<string, string> = {
+    PENDING: "gold",
+    SUCCESS: "green",
+    FAILED: "red",
+    REFUND_PENDING: "orange",
+    REFUNDED: "cyan",
+  };
+
+  const loadOrders = async (q?: string) => {
     if (!session?.user?.access_token) {
       return;
     }
@@ -75,6 +95,7 @@ const OrdersPage = () => {
       queryParams: {
         current: 1,
         pageSize: 20,
+        ...(q ? { query: q } : searchQuery ? { query: searchQuery } : {}),
       },
     });
 
@@ -86,7 +107,17 @@ const OrdersPage = () => {
   };
 
   useEffect(() => {
-    loadOrders();
+    const init = async () => {
+      const params =
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search)
+          : null;
+      const q = params?.get("query") || "";
+      setSearchQuery(q);
+      await loadOrders(q || undefined);
+    };
+
+    if (session) init();
   }, [session]);
 
   const handleCancelOrder = async (values: any) => {
@@ -144,9 +175,36 @@ const OrdersPage = () => {
     }
   };
 
-  const getBadgeStatus = (orderStatus: string, cancelStatus?: string) => {
+  const handleCopyOrderCode = async (orderId: string) => {
+    try {
+      const orderCode = orderId.slice(-8);
+      await navigator.clipboard.writeText(orderCode);
+      notification.success({
+        message: "Đã sao chép mã đơn",
+        description: `Mã: ${orderCode}`,
+      });
+    } catch (error) {
+      notification.error({
+        message: "Sao chép thất bại",
+      });
+    }
+  };
+
+  const getBadgeStatus = (
+    orderStatus: string,
+    cancelStatus?: string,
+    paymentStatus?: string,
+  ) => {
     if (cancelStatus === "REQUESTED") {
       return "warning";
+    }
+
+    if (paymentStatus === "REFUND_PENDING") {
+      return "warning";
+    }
+
+    if (paymentStatus === "REFUNDED") {
+      return "success";
     }
 
     switch (orderStatus) {
@@ -173,9 +231,21 @@ const OrdersPage = () => {
     }
   };
 
-  const getStatusText = (orderStatus: string, cancelStatus?: string) => {
+  const getStatusText = (
+    orderStatus: string,
+    cancelStatus?: string,
+    paymentStatus?: string,
+  ) => {
     if (cancelStatus === "REQUESTED") {
       return "ĐANG XÁC NHẬN HỦY";
+    }
+
+    if (paymentStatus === "REFUND_PENDING") {
+      return "ĐANG HOÀN TIỀN";
+    }
+
+    if (paymentStatus === "REFUNDED") {
+      return "ĐÃ HOÀN TIỀN";
     }
 
     switch (orderStatus) {
@@ -238,6 +308,25 @@ const OrdersPage = () => {
         <Text type="secondary">
           Xem trạng thái đơn hàng, thanh toán và chi tiết giao hàng.
         </Text>
+        <div style={{ marginTop: 12, maxWidth: 480 }}>
+          <Input.Search
+            placeholder="Tìm mã đơn (VD: 72f19871)"
+            enterButton
+            allowClear
+            onSearch={(value) => {
+              const q = (value || "").trim();
+              setSearchQuery(q);
+              loadOrders(q || undefined);
+              if (q) {
+                router.push(
+                  `/orders?query=${encodeURIComponent(q)}&current=1&pageSize=20`,
+                );
+              } else {
+                router.push("/orders");
+              }
+            }}
+          />
+        </div>
       </div>
 
       {orders.length ? (
@@ -280,16 +369,37 @@ const OrdersPage = () => {
                         alignItems: "center",
                       }}
                     >
-                      <Text strong>Đơn hàng #{order._id.slice(-6)}</Text>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                        }}
+                      >
+                        <Text strong>Đơn hàng #{order._id.slice(-8)}</Text>
+                        <Tooltip title="Sao chép mã đơn">
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<CopyOutlined />}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCopyOrderCode(order._id);
+                            }}
+                          />
+                        </Tooltip>
+                      </div>
 
                       <Badge
                         status={getBadgeStatus(
                           order.orderStatus,
                           order.cancelStatus,
+                          order.paymentStatus,
                         )}
                         text={getStatusText(
                           order.orderStatus,
                           order.cancelStatus,
+                          order.paymentStatus,
                         )}
                       />
                     </div>
@@ -298,14 +408,11 @@ const OrdersPage = () => {
                       Thanh toán:{" "}
                       <Tag
                         color={
-                          order.paymentStatus === "SUCCESS"
-                            ? "green"
-                            : order.paymentStatus === "FAILED"
-                              ? "red"
-                              : "gold"
+                          PAYMENT_STATUS_COLOR[order.paymentStatus] || "gold"
                         }
                       >
-                        {order.paymentStatus}
+                        {PAYMENT_STATUS_LABEL[order.paymentStatus] ||
+                          order.paymentStatus}
                       </Tag>
                     </Text>
 
@@ -362,7 +469,7 @@ const OrdersPage = () => {
 
                     <Space wrap>
                       {/* CHƯA GỬI YÊU CẦU HỦY */}
-                      {order.orderStatus === "PENDING" &&
+                      {["PENDING", "PROCESSING"].includes(order.orderStatus) &&
                         order.cancelStatus !== "REQUESTED" && (
                           <Button
                             danger

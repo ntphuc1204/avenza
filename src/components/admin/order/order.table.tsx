@@ -9,6 +9,7 @@ import {
   Modal,
   Space,
   Popconfirm,
+  Input,
 } from "antd";
 
 import React, { useState, Fragment } from "react";
@@ -100,6 +101,8 @@ const PAYMENT_STATUS_MAP: Record<string, { label: string; color: string }> = {
   PENDING: { label: "Chờ thanh toán", color: "orange" },
   SUCCESS: { label: "Đã thanh toán", color: "green" },
   FAILED: { label: "Thanh toán thất bại", color: "red" },
+  REFUND_PENDING: { label: "Đang hoàn tiền", color: "orange" },
+  REFUNDED: { label: "Đã hoàn tiền", color: "cyan" },
 };
 
 const OrderTable = ({ data, accessToken }: IProps) => {
@@ -116,6 +119,15 @@ const OrderTable = ({ data, accessToken }: IProps) => {
 
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
+  const [cancelModalOrderId, setCancelModalOrderId] = useState<string | null>(
+    null,
+  );
+  const [cancelReason, setCancelReason] = useState<string>("");
+  const [cancelMessage, setCancelMessage] = useState<string>("");
+  const [isCancelModalVisible, setIsCancelModalVisible] = useState(false);
+
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
   const [orderDetailsMap, setOrderDetailsMap] = useState<Record<string, any[]>>(
     {},
@@ -123,7 +135,32 @@ const OrderTable = ({ data, accessToken }: IProps) => {
   const [editingDetail, setEditingDetail] = useState<any | null>(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
 
+  const handleSearch = (value: string) => {
+    setSearchQuery(value);
+    try {
+      const params = new URLSearchParams(window.location.search);
+      params.set("current", "1");
+      params.set("pageSize", "20");
+      if (value) {
+        params.set("query", value);
+      } else {
+        params.delete("query");
+      }
+      router.push(`${window.location.pathname}?${params.toString()}`);
+    } catch (e) {
+      // fallback
+    }
+  };
+
   const handleUpdateStatus = async (orderId: string, status: string) => {
+    if (status === "CANCELLED") {
+      setCancelModalOrderId(orderId);
+      setCancelReason("");
+      setCancelMessage("");
+      setIsCancelModalVisible(true);
+      return;
+    }
+
     if (!accessToken) {
       message.error("Không tìm thấy quyền truy cập");
       return;
@@ -202,22 +239,110 @@ const OrderTable = ({ data, accessToken }: IProps) => {
     });
   };
 
-  const handlePaginationChange = (page: number, pageSize?: number) => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      params.set("page", String(page));
-      if (pageSize) params.set("pageSize", String(pageSize));
+  const handleMarkRefunded = async (orderId: string) => {
+    Modal.confirm({
+      title: "Xác nhận hoàn tiền",
+      content: "Bạn có chắc đơn hàng này đã hoàn tiền thành công?",
 
-      router.push(`${window.location.pathname}?${params.toString()}`);
-    } catch (e) {
-      // fallback: do nothing
+      okText: "Xác nhận",
+      cancelText: "Đóng",
+
+      onOk: async () => {
+        if (!accessToken) {
+          message.error("Không tìm thấy quyền truy cập");
+
+          return;
+        }
+
+        setUpdatingId(orderId);
+
+        try {
+          const res = await sendRequest<IBackendRes<any>>({
+            url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/orders/${orderId}/refunded`,
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          });
+
+          if (res?.data) {
+            message.success("Đã đánh dấu hoàn tiền");
+            router.refresh();
+          } else {
+            message.error(res?.message || "Không thể hoàn tiền");
+          }
+        } catch (error) {
+          message.error("Lỗi khi xác nhận hoàn tiền");
+        } finally {
+          setUpdatingId(null);
+        }
+      },
+    });
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!cancelReason || !cancelModalOrderId) {
+      message.error("Vui lòng nhập lý do hủy đơn");
+      return;
     }
+
+    if (!accessToken) {
+      message.error("Không tìm thấy quyền truy cập");
+      return;
+    }
+
+    setUpdatingId(cancelModalOrderId);
+
+    try {
+      const res = await sendRequest<IBackendRes<any>>({
+        url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/orders/${cancelModalOrderId}/status`,
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: {
+          status: "CANCELLED",
+          cancelReason,
+          cancelMessage,
+        },
+      });
+
+      if (res?.data) {
+        message.success("Cập nhật hủy đơn thành công");
+        router.refresh();
+        setIsCancelModalVisible(false);
+      } else {
+        message.error(res?.message || "Cập nhật thất bại");
+      }
+    } catch (error) {
+      message.error("Lỗi khi cập nhật trạng thái");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const handlePaginationChange = (page: number, pageSize?: number) => {
+    const params = new URLSearchParams(window.location.search);
+
+    params.set("current", String(page));
+
+    if (pageSize) {
+      params.set("pageSize", String(pageSize));
+    }
+
+    router.push(`${window.location.pathname}?${params.toString()}`);
   };
 
   return (
     <div className="page-wrapper">
       <div className="page-header">
         <h2 className="page-title">Quản lý đơn hàng</h2>
+        <Input.Search
+          placeholder="Tìm kiếm mã đơn (VD: 12345678)"
+          allowClear
+          style={{ width: 250 }}
+          onSearch={handleSearch}
+        />
       </div>
 
       <div className="table-scroll">
@@ -293,11 +418,14 @@ const OrderTable = ({ data, accessToken }: IProps) => {
                       >
                         <Tag
                           color={
-                            STATUS_MAP[item.orderStatus]?.color || "orange"
+                            STATUS_MAP[
+                              item.orderStatus as keyof typeof STATUS_MAP
+                            ]?.color || "orange"
                           }
                         >
-                          {STATUS_MAP[item.orderStatus]?.label ||
-                            item.orderStatus}
+                          {STATUS_MAP[
+                            item.orderStatus as keyof typeof STATUS_MAP
+                          ]?.label || item.orderStatus}
                         </Tag>
 
                         {item.cancelStatus === "REQUESTED" && (
@@ -313,12 +441,14 @@ const OrderTable = ({ data, accessToken }: IProps) => {
                     <td>
                       <Tag
                         color={
-                          PAYMENT_STATUS_MAP[item.paymentStatus]?.color ||
-                          "orange"
+                          PAYMENT_STATUS_MAP[
+                            item.paymentStatus as keyof typeof PAYMENT_STATUS_MAP
+                          ]?.color || "orange"
                         }
                       >
-                        {PAYMENT_STATUS_MAP[item.paymentStatus]?.label ||
-                          item.paymentStatus}
+                        {PAYMENT_STATUS_MAP[
+                          item.paymentStatus as keyof typeof PAYMENT_STATUS_MAP
+                        ]?.label || item.paymentStatus}
                       </Tag>
                     </td>
 
@@ -384,6 +514,24 @@ const OrderTable = ({ data, accessToken }: IProps) => {
                             }}
                           >
                             Xác nhận hủy
+                          </Button>
+                        </div>
+                      ) : item.paymentStatus === "REFUND_PENDING" ? (
+                        <div style={{ minWidth: 220 }}>
+                          <Tag color="orange">Chờ hoàn tiền</Tag>
+
+                          <Button
+                            type="primary"
+                            loading={updatingId === item._id}
+                            style={{
+                              marginTop: 12,
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMarkRefunded(item._id);
+                            }}
+                          >
+                            Hoàn tiền xong
                           </Button>
                         </div>
                       ) : item.cancelStatus === "APPROVED" ? (
@@ -464,6 +612,35 @@ const OrderTable = ({ data, accessToken }: IProps) => {
           </tbody>
         </table>
       </div>
+
+      <Modal
+        title="Lý do hủy đơn"
+        open={isCancelModalVisible}
+        onOk={handleConfirmCancel}
+        onCancel={() => setIsCancelModalVisible(false)}
+        okText="Xác nhận"
+        cancelText="Hủy"
+      >
+        <div style={{ marginBottom: 16 }}>
+          <strong>Lý do hủy</strong>
+          <Input.TextArea
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+            rows={3}
+            placeholder="Nhập lý do hủy đơn"
+          />
+        </div>
+
+        <div>
+          <strong>Ghi chú</strong>
+          <Input.TextArea
+            value={cancelMessage}
+            onChange={(e) => setCancelMessage(e.target.value)}
+            rows={3}
+            placeholder="Nhập ghi chú (tuỳ chọn)"
+          />
+        </div>
+      </Modal>
 
       <div className="pagination-wrapper">
         <Pagination

@@ -1,15 +1,16 @@
 "use client";
 
-import { Badge, Button, Card, Empty, List, Space, Typography } from "antd";
+import { Badge, Button, Card, Empty, List, notification, Space, Typography } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import GuestLayout from "@/components/layout/guest.layout";
 import { sendRequest } from "@/utils/api";
+import { CopyOutlined } from "@ant-design/icons";
 
-const { Title, Text } = Typography;
 
 const NotificationsPage = () => {
+  const { Title, Text } = Typography;
   const { data: session } = useSession();
   const router = useRouter();
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -57,7 +58,22 @@ const NotificationsPage = () => {
       updatedAt: item.updatedAt || item.createdAt,
     }));
   }, [notifications]);
+  const handleCopyOrderCode = async (orderId: string) => {
+    try {
+      const orderCode = orderId.slice(-8);
 
+      await navigator.clipboard.writeText(orderCode);
+
+      notification.success({
+        message: "Đã sao chép mã đơn",
+        description: `Mã: ${orderCode}`,
+      });
+    } catch (error) {
+      notification.error({
+        message: "Sao chép thất bại",
+      });
+    }
+  };
   if (!session) {
     return (
       <GuestLayout>
@@ -99,7 +115,10 @@ const NotificationsPage = () => {
               <List.Item
                 key={item._id}
                 actions={[
-                  <Button type="link" onClick={() => router.push(item.link || "/orders")}>
+                  <Button
+                    type="link"
+                    onClick={() => router.push(item.link || "/orders")}
+                  >
                     Xem chi tiết
                   </Button>,
                 ]}
@@ -116,9 +135,38 @@ const NotificationsPage = () => {
                         justifyContent: "space-between",
                         alignItems: "center",
                         gap: 16,
+                        flexWrap: "wrap",
                       }}
                     >
-                      <Text strong>{item.title}</Text>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <Text strong>{item.title}</Text>
+
+                        {item.data?.orderId && (
+                          <>
+                            <Text type="secondary">
+                              #{item.data.orderId.slice(-8)}
+                            </Text>
+
+                            <Button
+                              type="text"
+                              size="small"
+                              icon={<CopyOutlined />}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCopyOrderCode(item.data.orderId);
+                              }}
+                            />
+                          </>
+                        )}
+                      </div>
+
                       <Badge
                         status={
                           item.data?.orderStatus === "DELIVERED"
@@ -129,23 +177,6 @@ const NotificationsPage = () => {
                         }
                         text={item.data?.orderStatus || item.type}
                       />
-                    </div>
-                  }
-                  description={
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        gap: 16,
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <Text type="secondary">{item.description}</Text>
-                      <Text type="secondary">
-                        Tổng:{" "}
-                        {Number(item.data?.totalPrice || 0).toLocaleString("vi-VN")}{" "}
-                        đ
-                      </Text>
                     </div>
                   }
                 />

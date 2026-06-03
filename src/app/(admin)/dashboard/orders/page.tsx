@@ -8,8 +8,9 @@ interface IProps {
 }
 
 const ManageOrdersPage = async (props: IProps) => {
-  const current = props?.searchParams?.current ?? 1;
-  const pageSize = props?.searchParams?.pageSize ?? 20;
+  const current = Number(props?.searchParams?.current) || 1;
+  const pageSize = Number(props?.searchParams?.pageSize) || 20;
+  const query = (props?.searchParams?.query as string) || "";
   const session = await auth();
 
   const res = await sendRequest<IBackendRes<any>>({
@@ -18,6 +19,7 @@ const ManageOrdersPage = async (props: IProps) => {
     queryParams: {
       current,
       pageSize,
+      ...(query && { query }),
     },
     headers: {
       Authorization: `Bearer ${session?.user?.access_token}`,
