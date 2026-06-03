@@ -56,7 +56,7 @@ const AdminHeader = (props: any) => {
             icon={<HomeOutlined />}
             onClick={() => router.push("/")}
           >
-            Guest
+            Trang chủ
           </Button>
         </div>
 

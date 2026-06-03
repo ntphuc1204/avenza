@@ -151,7 +151,7 @@ const AdminCard = () => {
     <Spin spinning={loading}>
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col xs={24} md={12}>
-          <Card title="Filter theo khoảng thời gian" bordered={false}>
+          <Card title="Filter theo khoảng thời gian" bordered>
             <DatePicker.RangePicker
               style={{ width: "100%" }}
               onChange={(_, dateStrings) =>
@@ -180,21 +180,21 @@ const AdminCard = () => {
       </Row>
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Total Users" bordered={false}>
+          <Card title="Total Users" bordered>
             <div style={{ fontSize: 24, fontWeight: "bold", color: "#1890ff" }}>
               {orderStats.totalUsers}
             </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Active Users" bordered={false}>
+          <Card title="Active Users" bordered>
             <div style={{ fontSize: 24, fontWeight: "bold", color: "#52c41a" }}>
               {orderStats.activeUsers}
             </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Inactive Users" bordered={false}>
+          <Card title="Inactive Users" bordered>
             <div style={{ fontSize: 24, fontWeight: "bold", color: "#ff4d4f" }}>
               {orderStats.inactiveUsers}
             </div>
@@ -203,33 +203,34 @@ const AdminCard = () => {
       </Row>
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Total Orders" bordered={false}>
+          <Card title="Total Orders" bordered>
             <div style={{ fontSize: 24, fontWeight: "bold", color: "#722ed1" }}>
               {orderStats.totalOrders}
             </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Doanh thu" bordered={false}>
+          <Card title="Doanh thu" bordered>
             <div style={{ fontSize: 24, fontWeight: "bold", color: "#fa8c16" }}>
               {orderStats.totalRevenue?.toLocaleString("vi-VN")} đ
             </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Giá vốn (ước tính)" bordered={false}>
+          <Card title="Giá vốn (ước tính)" bordered>
             <div style={{ fontSize: 24, fontWeight: "bold", color: "#eb2f96" }}>
               {(orderStats.totalCost ?? 0).toLocaleString("vi-VN")} đ
             </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Lợi nhuận" bordered={false}>
+          <Card title="Lợi nhuận" bordered>
             <div
               style={{
                 fontSize: 24,
                 fontWeight: "bold",
-                color: (orderStats.totalProfit ?? 0) >= 0 ? "#52c41a" : "#ff4d4f",
+                color:
+                  (orderStats.totalProfit ?? 0) >= 0 ? "#52c41a" : "#ff4d4f",
               }}
             >
               {(orderStats.totalProfit ?? 0).toLocaleString("vi-VN")} đ
@@ -239,35 +240,35 @@ const AdminCard = () => {
       </Row>
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Biên lợi nhuận" bordered={false}>
+          <Card title="Biên lợi nhuận" bordered>
             <div style={{ fontSize: 24, fontWeight: "bold", color: "#13c2c2" }}>
               {orderStats.profitMarginPercent ?? 0}%
             </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Total Products" bordered={false}>
+          <Card title="Total Products" bordered>
             <div style={{ fontSize: 24, fontWeight: "bold", color: "#722ed1" }}>
               {orderStats.totalProducts}
             </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Total Categories" bordered={false}>
+          <Card title="Total Categories" bordered>
             <div style={{ fontSize: 24, fontWeight: "bold", color: "#722ed1" }}>
               {orderStats.totalCategories}
             </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Total Reviews" bordered={false}>
+          <Card title="Total Reviews" bordered>
             <div style={{ fontSize: 24, fontWeight: "bold", color: "#722ed1" }}>
               {orderStats.totalReviews}
             </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Total Payments" bordered={false}>
+          <Card title="Total Payments" bordered>
             <div style={{ fontSize: 24, fontWeight: "bold", color: "#722ed1" }}>
               {orderStats.totalPayments}
             </div>
@@ -276,14 +277,14 @@ const AdminCard = () => {
       </Row>
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Total Carts" bordered={false}>
+          <Card title="Total Carts" bordered>
             <div style={{ fontSize: 24, fontWeight: "bold", color: "#722ed1" }}>
               {orderStats.totalCarts}
             </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Order Status" bordered={false}>
+          <Card title="Order Status" bordered>
             {Object.keys(orderStats.orderStatuses).length === 0 ? (
               <Typography.Text>Chưa có đơn hàng.</Typography.Text>
             ) : (
@@ -299,7 +300,7 @@ const AdminCard = () => {
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Payment Status" bordered={false}>
+          <Card title="Payment Status" bordered>
             {Object.keys(orderStats.paymentStatuses).length === 0 ? (
               <Typography.Text>Chưa có thanh toán.</Typography.Text>
             ) : (
@@ -317,7 +318,7 @@ const AdminCard = () => {
       </Row>
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col xs={24} md={12}>
-          <Card title="Order Status Chart" bordered={false}>
+          <Card title="Order Status Chart" bordered>
             {orderStatusChart.length ? (
               renderBarChart(orderStatusChart)
             ) : (
@@ -326,7 +327,7 @@ const AdminCard = () => {
           </Card>
         </Col>
         <Col xs={24} md={12}>
-          <Card title="Payment Status Chart" bordered={false}>
+          <Card title="Payment Status Chart" bordered>
             {paymentStatusChart.length ? (
               renderBarChart(paymentStatusChart)
             ) : (
@@ -335,14 +336,14 @@ const AdminCard = () => {
           </Card>
         </Col>
       </Row>
-      <Card title="Top Products" bordered={false}>
+      <Card title="Top Products" bordered>
         {orderStats.topProducts.length === 0 ? (
           <Typography.Text>Không có sản phẩm nổi bật.</Typography.Text>
         ) : (
           orderStats.topProducts.map((item, index) => (
             <div key={item._id} style={{ marginBottom: 12 }}>
               <Typography.Text strong>{index + 1}. </Typography.Text>
-              <Typography.Text>{item._id}</Typography.Text>
+              <Typography.Text>{item.name}</Typography.Text>
               <Typography.Text type="secondary">
                 {" "}
                 — {item.quantity} sản phẩm

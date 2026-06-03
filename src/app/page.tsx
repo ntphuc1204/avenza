@@ -15,8 +15,7 @@ import {
   FloatButton,
 } from "antd";
 
-import { useEffect, useState } from "react";
-
+import { useEffect, useState, useMemo } from "react";
 import GuestLayout from "@/components/layout/guest.layout";
 
 import ProductCard from "@/components/guest/product.card";
@@ -61,7 +60,11 @@ const HomePage = () => {
   const [discounts, setDiscounts] = useState<any[]>([]);
 
   const [claimedDiscountIds, setClaimedDiscountIds] = useState<string[]>([]);
-
+  const availableDiscounts = useMemo(() => {
+    return discounts.filter(
+      (discount) => !claimedDiscountIds.includes(discount._id),
+    );
+  }, [discounts, claimedDiscountIds]);
   const [loading, setLoading] = useState(true);
 
   const [categoryLoading, setCategoryLoading] = useState(true);
@@ -388,7 +391,7 @@ const HomePage = () => {
       </div>
 
       {/* DISCOUNTS */}
-      {discounts.length ? (
+      {availableDiscounts.length ? (
         <div
           style={{
             ...cardStyle,
@@ -415,7 +418,7 @@ const HomePage = () => {
               paddingBottom: 8,
             }}
           >
-            {discounts.map((discount) => {
+            {availableDiscounts.map((discount) => {
               const isClaimed = claimedDiscountIds.includes(discount._id);
 
               const remaining =

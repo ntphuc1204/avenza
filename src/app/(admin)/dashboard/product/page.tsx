@@ -17,10 +17,20 @@ const ManageProductPage = async (props: IProps) => {
 
   const pageSize = props?.searchParams?.pageSize ?? 10;
 
+  const search = props?.searchParams?.search ?? "";
+
   const session = await auth();
   console.log(session);
 
   // danh sách sản phẩm
+  const queryObj: Record<string, any> = {
+    status: "ALL",
+  };
+
+  if (search) {
+    queryObj.search = search;
+  }
+
   const res = await sendRequest<IBackendRes<any>>({
     url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/products`,
 
@@ -29,6 +39,7 @@ const ManageProductPage = async (props: IProps) => {
     queryParams: {
       current,
       pageSize,
+      query: JSON.stringify(queryObj),
     },
 
     headers: {

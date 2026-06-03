@@ -80,19 +80,19 @@ interface IProps {
 
 const STATUS_OPTIONS = [
   "PENDING",
-  "CONFIRMED",
   "PROCESSING",
   "DELIVERING",
   "DELIVERED",
+  "DELIVERY_FAILED",
   "CANCELLED",
 ];
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   PENDING: { label: "Chờ xử lý", color: "orange" },
-  CONFIRMED: { label: "Đã xác nhận", color: "blue" },
   PROCESSING: { label: "Đang xử lý", color: "blue" },
   DELIVERING: { label: "Đang giao", color: "cyan" },
   DELIVERED: { label: "Đã giao", color: "green" },
+  DELIVERY_FAILED: { label: "Giao hàng thất bại", color: "volcano" },
   CANCELLED: { label: "Hủy", color: "red" },
 };
 

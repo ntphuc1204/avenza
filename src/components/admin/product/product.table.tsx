@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { DeleteTwoTone, EditTwoTone } from "@ant-design/icons";
 
-import { Button, Pagination, Popconfirm, message } from "antd";
+import { Button, Pagination, Popconfirm, message, Input, Space } from "antd";
 
 import ProductCreate from "./product.create";
 import ProductUpdate from "./product.update";
@@ -54,7 +54,12 @@ interface IProps {
   accessToken: string;
 }
 
-const ProductTable = ({ data, categories = [], suppliers = [], accessToken }: IProps) => {
+const ProductTable = ({
+  data,
+  categories = [],
+  suppliers = [],
+  accessToken,
+}: IProps) => {
   const products = data?.results || [];
 
   const meta = data?.meta || {
@@ -77,6 +82,9 @@ const ProductTable = ({ data, categories = [], suppliers = [], accessToken }: IP
   const [dataUpdate, setDataUpdate] = useState<IProduct | null>(null);
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [searchText, setSearchText] = useState(
+    searchParams.get("search") ?? "",
+  );
 
   // =========================
   // FIX IMAGE
@@ -140,8 +148,22 @@ const ProductTable = ({ data, categories = [], suppliers = [], accessToken }: IP
   };
 
   // =========================
-  // PAGINATION
+  // SEARCH + PAGINATION
   // =========================
+  const handleSearch = (value: string) => {
+    const params = new URLSearchParams(searchParams);
+
+    if (value.trim()) {
+      params.set("search", value.trim());
+    } else {
+      params.delete("search");
+    }
+
+    params.set("current", "1");
+
+    replace(`${pathname}?${params.toString()}`);
+  };
+
   const handlePagination = (page: number, pageSize: number) => {
     const params = new URLSearchParams(searchParams);
 
@@ -160,9 +182,21 @@ const ProductTable = ({ data, categories = [], suppliers = [], accessToken }: IP
         <h2 className="page-title">Quản lý sản phẩm</h2>
 
         <div className="page-actions">
-          <Button type="primary" onClick={() => setIsCreateModalOpen(true)}>
-            + Thêm sản phẩm
-          </Button>
+          <Space.Compact>
+            <Input.Search
+              placeholder="Tìm sản phẩm theo tên hoặc mô tả"
+              allowClear
+              enterButton="Tìm"
+              value={searchText}
+              style={{ width: 320 }}
+              onChange={(e) => setSearchText(e.target.value)}
+              onSearch={handleSearch}
+            />
+
+            <Button type="primary" onClick={() => setIsCreateModalOpen(true)}>
+              + Thêm sản phẩm
+            </Button>
+          </Space.Compact>
         </div>
       </div>
 
@@ -217,16 +251,14 @@ const ProductTable = ({ data, categories = [], suppliers = [], accessToken }: IP
                 {/* PRICE */}
                 <td>{item.price?.toLocaleString("vi-VN")} đ</td>
 
-                <td>
-                  {(item.importPrice ?? 0).toLocaleString("vi-VN")} đ
-                </td>
+                <td>{(item.importPrice ?? 0).toLocaleString("vi-VN")} đ</td>
 
                 <td>
                   {item.price > 0 && item.importPrice != null ? (
                     <span style={{ color: "#52c41a" }}>
-                      {(
-                        item.price - (item.importPrice ?? 0)
-                      ).toLocaleString("vi-VN")}{" "}
+                      {(item.price - (item.importPrice ?? 0)).toLocaleString(
+                        "vi-VN",
+                      )}{" "}
                       đ (
                       {Math.round(
                         ((item.price - (item.importPrice ?? 0)) / item.price) *

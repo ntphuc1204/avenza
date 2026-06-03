@@ -272,7 +272,7 @@ const GuestHeader = () => {
         </Button>
       </Link>
 
-      {session?.user && (
+      {session?.user && session.user.role !== "ADMIN" && (
         <Link href="/chat" onClick={() => setChatUnreadCount(0)}>
           <Badge
             count={chatUnreadCount}

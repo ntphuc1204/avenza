@@ -223,9 +223,9 @@ const CartPage = () => {
           quantity: item.quantity,
         })),
         shippingAddress: {
-          recipientName: values.recipientName,
-          phone: values.phone,
-          address: values.address,
+          recipientName: userProfile?.name,
+          phone: userProfile?.phone,
+          address: userProfile?.address,
           note: values.note,
         },
         paymentMethod: "COD",
@@ -260,9 +260,9 @@ const CartPage = () => {
         discountCode: selectedDiscount?.discount?.code || null,
 
         shippingAddress: {
-          recipientName: values.recipientName,
-          phone: values.phone,
-          address: values.address,
+          recipientName: userProfile?.name,
+          phone: userProfile?.phone,
+          address: userProfile?.address,
           note: values.note || "",
         },
 
@@ -389,36 +389,51 @@ const CartPage = () => {
                   <List.Item.Meta
                     title={item.name}
                     description={
-                      <Space>
-                        <Button
-                          size="small"
-                          disabled={item.quantity <= 1}
-                          onClick={() =>
-                            updateItem(item.productId, item.quantity - 1)
-                          }
-                        >
-                          -
-                        </Button>
-
-                        <Text strong>{item.quantity}</Text>
-
-                        <Tooltip
-                          title={
-                            item.quantity === item.stock
-                              ? `Chỉ còn ${item.stock} sản phẩm`
-                              : ""
-                          }
-                        >
+                      <Space direction="vertical" style={{ width: "100%" }}>
+                        <Space>
                           <Button
                             size="small"
-                            disabled={item.quantity >= item.stock}
+                            disabled={item.quantity <= 1}
                             onClick={() =>
-                              updateItem(item.productId, item.quantity + 1)
+                              updateItem(item.productId, item.quantity - 1)
                             }
                           >
-                            +
+                            -
                           </Button>
-                        </Tooltip>
+
+                          <Text strong>{item.quantity}</Text>
+
+                          <Tooltip
+                            title={
+                              item.quantity === item.stock
+                                ? `Chỉ còn ${item.stock} sản phẩm`
+                                : ""
+                            }
+                          >
+                            <Button
+                              size="small"
+                              disabled={item.quantity >= item.stock}
+                              onClick={() =>
+                                updateItem(item.productId, item.quantity + 1)
+                              }
+                            >
+                              +
+                            </Button>
+                          </Tooltip>
+                        </Space>
+
+                        <Space size={16}>
+                          <Text type="secondary">
+                            Giá: {Number(item.price).toLocaleString("vi-VN")} ₫
+                          </Text>
+                          <Text strong>
+                            Thành tiền:{" "}
+                            {(item.price * item.quantity).toLocaleString(
+                              "vi-VN",
+                            )}{" "}
+                            ₫
+                          </Text>
+                        </Space>
                       </Space>
                     }
                   />

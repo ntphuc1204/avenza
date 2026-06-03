@@ -156,8 +156,14 @@ const OrdersPage = () => {
       case "PENDING":
         return "processing";
 
-      case "CONFIRMED":
+      case "PROCESSING":
         return "processing";
+
+      case "DELIVERING":
+        return "processing";
+
+      case "DELIVERY_FAILED":
+        return "error";
 
       case "CANCELLED":
         return "error";
@@ -174,10 +180,7 @@ const OrdersPage = () => {
 
     switch (orderStatus) {
       case "PENDING":
-        return "ĐANG CHỜ XÁC NHẬN";
-
-      case "CONFIRMED":
-        return "ĐÃ XÁC NHẬN";
+        return "ĐANG CHỜ XỬ LÝ";
 
       case "PROCESSING":
         return "ĐANG XỬ LÝ";
@@ -187,6 +190,9 @@ const OrdersPage = () => {
 
       case "DELIVERED":
         return "ĐÃ GIAO";
+
+      case "DELIVERY_FAILED":
+        return "GIAO HÀNG THẤT BẠI";
 
       case "CANCELLED":
         return "ĐÃ HỦY";
