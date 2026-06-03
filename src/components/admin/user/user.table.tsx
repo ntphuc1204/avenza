@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { DeleteTwoTone, EditTwoTone } from "@ant-design/icons";
 
-import { Button, Pagination, Popconfirm, message } from "antd";
+import { Button, Input, Pagination, Popconfirm, Space, message } from "antd";
 
 import UserCreate from "./user.create";
 import UserUpdate from "./user.update";
@@ -66,6 +66,9 @@ const UserTable = ({ data, accessToken }: IProps) => {
   const [dataUpdate, setDataUpdate] = useState<IUser | null>(null);
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [searchText, setSearchText] = useState(
+    searchParams.get("search") ?? "",
+  );
 
   const renderImage = (image?: string) => {
     const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "";
@@ -97,6 +100,17 @@ const UserTable = ({ data, accessToken }: IProps) => {
     }
   };
 
+  const handleSearch = (value: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (value.trim()) {
+      params.set("search", value.trim());
+    } else {
+      params.delete("search");
+    }
+    params.set("current", "1");
+    replace(`${pathname}?${params.toString()}`);
+  };
+
   const handlePagination = (page: number, pageSize: number) => {
     const params = new URLSearchParams(searchParams);
 
@@ -115,9 +129,20 @@ const UserTable = ({ data, accessToken }: IProps) => {
         <h2 className="page-title">Quản lý người dùng</h2>
 
         <div className="page-actions">
-          <Button type="primary" onClick={() => setIsCreateModalOpen(true)}>
-            + Thêm người dùng
-          </Button>
+          <Space.Compact>
+            <Input.Search
+              placeholder="Tìm theo tên, email, SĐT, vai trò"
+              allowClear
+              enterButton="Tìm"
+              value={searchText}
+              style={{ width: 320 }}
+              onChange={(e) => setSearchText(e.target.value)}
+              onSearch={handleSearch}
+            />
+            <Button type="primary" onClick={() => setIsCreateModalOpen(true)}>
+              + Thêm người dùng
+            </Button>
+          </Space.Compact>
         </div>
       </div>
 

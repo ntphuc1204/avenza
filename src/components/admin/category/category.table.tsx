@@ -14,7 +14,7 @@ import { DeleteTwoTone, EditTwoTone } from "@ant-design/icons";
 
 import { useState } from "react";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { sendRequest } from "@/utils/api";
 
@@ -63,7 +63,12 @@ const CategoryTable = ({ data, accessToken }: IProps) => {
 
   const [form] = Form.useForm();
 
-  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { replace, refresh } = useRouter();
+  const [searchText, setSearchText] = useState(
+    searchParams.get("search") ?? "",
+  );
 
   const handleDelete = async (id: string) => {
     if (!accessToken) {
@@ -88,7 +93,7 @@ const CategoryTable = ({ data, accessToken }: IProps) => {
       if (res?.data) {
         message.success("Xóa danh mục thành công");
 
-        router.refresh();
+        refresh();
       } else {
         message.error(res?.message || "Xóa danh mục thất bại");
       }
@@ -159,13 +164,31 @@ const CategoryTable = ({ data, accessToken }: IProps) => {
 
         form.resetFields();
 
-        router.refresh();
+        refresh();
       } else {
         message.error(res?.message || "Thao tác thất bại");
       }
     } catch (error) {
       message.error("Lỗi khi lưu danh mục");
     }
+  };
+
+  const handleSearch = (value: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (value.trim()) {
+      params.set("search", value.trim());
+    } else {
+      params.delete("search");
+    }
+    params.set("current", "1");
+    replace(`${pathname}?${params.toString()}`);
+  };
+
+  const handlePagination = (page: number, pageSize: number) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("current", page.toString());
+    params.set("pageSize", pageSize.toString());
+    replace(`${pathname}?${params.toString()}`);
   };
 
   return (
@@ -176,6 +199,15 @@ const CategoryTable = ({ data, accessToken }: IProps) => {
         <h2 className="page-title">Quản lý danh mục</h2>
 
         <div className="page-actions">
+          <Input.Search
+            placeholder="Tìm theo tên, slug, mô tả"
+            allowClear
+            enterButton="Tìm"
+            value={searchText}
+            style={{ width: 280, marginRight: 8 }}
+            onChange={(e) => setSearchText(e.target.value)}
+            onSearch={handleSearch}
+          />
           <Button
             type="primary"
             onClick={() => {
@@ -274,9 +306,10 @@ const CategoryTable = ({ data, accessToken }: IProps) => {
           total={meta.total}
           showSizeChanger
           pageSizeOptions={["10", "20", "50", "100"]}
-          onChange={(page, pageSize) => {
-            console.log(page, pageSize);
-          }}
+          onChange={handlePagination}
+          showTotal={(total, range) =>
+            `${range[0]}-${range[1]} trong tổng ${total} danh mục`
+          }
         />
       </div>
 

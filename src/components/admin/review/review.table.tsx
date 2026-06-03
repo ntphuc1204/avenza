@@ -67,6 +67,20 @@ const ReviewTable = ({ data, accessToken }: IProps) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [form] = Form.useForm();
+  const [searchText, setSearchText] = useState(
+    searchParams.get("search") ?? "",
+  );
+
+  const handleSearch = (value: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (value.trim()) {
+      params.set("search", value.trim());
+    } else {
+      params.delete("search");
+    }
+    params.set("current", "1");
+    replace(`${pathname}?${params.toString()}`);
+  };
 
   const handlePagination = (page: number, pageSize: number) => {
     const params = new URLSearchParams(searchParams);
@@ -157,6 +171,17 @@ const ReviewTable = ({ data, accessToken }: IProps) => {
 
       <div className="page-header">
         <h2 className="page-title">Quản lý Reviews</h2>
+        <div className="page-actions">
+          <Input.Search
+            placeholder="Tìm theo nội dung, email, tên SP, mã"
+            allowClear
+            enterButton="Tìm"
+            value={searchText}
+            style={{ width: 320 }}
+            onChange={(e) => setSearchText(e.target.value)}
+            onSearch={handleSearch}
+          />
+        </div>
       </div>
 
       {/* TABLE */}
@@ -188,7 +213,7 @@ const ReviewTable = ({ data, accessToken }: IProps) => {
 
                 <td>
                   {typeof item.productId === "object"
-                    ? item.productId?._id
+                    ? item.productId?.name || item.productId?._id
                     : item.productId || "-"}
                 </td>
 

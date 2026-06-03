@@ -1,9 +1,24 @@
 "use client";
 
-import { Card, Col, DatePicker, Divider, Row, Spin, Typography } from "antd";
+import {
+  Button,
+  Card,
+  Col,
+  DatePicker,
+  Divider,
+  Row,
+  Segmented,
+  Spin,
+  Table,
+  Typography,
+  message,
+} from "antd";
+import { DownloadOutlined } from "@ant-design/icons";
 import { useEffect, useMemo, useState } from "react";
 import { sendRequest } from "@/utils/api";
 import { useSession } from "next-auth/react";
+
+type StatsPeriod = "day" | "month" | "year";
 
 interface IOrderStats {
   totalOrders: number;
@@ -19,14 +34,27 @@ interface IOrderStats {
   totalReviews: number;
   totalPayments: number;
   totalCarts: number;
-  topProducts: Array<{ _id: string; quantity: number }>;
+  topProducts: Array<{ _id: string; name?: string; quantity: number }>;
   orderStatuses: Record<string, number>;
   paymentStatuses: Record<string, number>;
 }
 
+interface ITimeseriesRow {
+  period: string;
+  orderCount: number;
+  revenue: number;
+}
+
+const PERIOD_OPTIONS: { label: string; value: StatsPeriod }[] = [
+  { label: "Theo ngày", value: "day" },
+  { label: "Theo tháng", value: "month" },
+  { label: "Theo năm", value: "year" },
+];
+
 const AdminCard = () => {
   const { data: session } = useSession();
   const [dateRange, setDateRange] = useState<[string, string] | null>(null);
+  const [statsPeriod, setStatsPeriod] = useState<StatsPeriod>("day");
   const [orderStats, setOrderStats] = useState<IOrderStats>({
     totalOrders: 0,
     totalRevenue: 0,
@@ -45,26 +73,49 @@ const AdminCard = () => {
     orderStatuses: {},
     paymentStatuses: {},
   });
+  const [timeseries, setTimeseries] = useState<ITimeseriesRow[]>([]);
+  const [timeseriesTotals, setTimeseriesTotals] = useState({
+    orderCount: 0,
+    revenue: 0,
+  });
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+
+  const buildQueryParams = () => {
+    const queryParams: Record<string, string> = {};
+    if (dateRange?.[0]) queryParams.from = dateRange[0];
+    if (dateRange?.[1]) queryParams.to = dateRange[1];
+    return queryParams;
+  };
 
   useEffect(() => {
     const fetchStatistics = async () => {
       setLoading(true);
       try {
-        const queryParams: any = {};
-        if (dateRange) {
-          queryParams.from = dateRange[0];
-          queryParams.to = dateRange[1];
-        }
+        const queryParams = buildQueryParams();
+        const headers = {
+          Authorization: `Bearer ${session?.user?.access_token}`,
+        };
 
-        const orderRes = await sendRequest<IBackendRes<any>>({
-          url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/orders/dashboard/stats`,
-          method: "GET",
-          queryParams,
-          headers: {
-            Authorization: `Bearer ${session?.user?.access_token}`,
-          },
-        });
+        const [orderRes, seriesRes] = await Promise.all([
+          sendRequest<IBackendRes<IOrderStats>>({
+            url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/orders/dashboard/stats`,
+            method: "GET",
+            queryParams,
+            headers,
+          }),
+          sendRequest<
+            IBackendRes<{
+              series: ITimeseriesRow[];
+              totals: { orderCount: number; revenue: number };
+            }>
+          >({
+            url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/orders/dashboard/stats/timeseries`,
+            method: "GET",
+            queryParams: { ...queryParams, period: statsPeriod },
+            headers,
+          }),
+        ]);
 
         if (orderRes?.data) {
           setOrderStats({
@@ -86,6 +137,13 @@ const AdminCard = () => {
             paymentStatuses: orderRes.data.paymentStatuses || {},
           });
         }
+
+        if (seriesRes?.data) {
+          setTimeseries(seriesRes.data.series || []);
+          setTimeseriesTotals(
+            seriesRes.data.totals || { orderCount: 0, revenue: 0 },
+          );
+        }
       } catch (error) {
         console.error("Error fetching statistics:", error);
       } finally {
@@ -96,7 +154,7 @@ const AdminCard = () => {
     if (session?.user?.access_token) {
       fetchStatistics();
     }
-  }, [session?.user?.access_token, dateRange]);
+  }, [session?.user?.access_token, dateRange, statsPeriod]);
 
   const orderStatusChart = useMemo(
     () =>
@@ -115,6 +173,55 @@ const AdminCard = () => {
       })),
     [orderStats.paymentStatuses],
   );
+
+  const periodColumnTitle =
+    statsPeriod === "day"
+      ? "Ngày"
+      : statsPeriod === "month"
+        ? "Tháng"
+        : "Năm";
+
+  const handleExportExcel = async () => {
+    if (!session?.user?.access_token) return;
+
+    setExporting(true);
+    try {
+      const params = new URLSearchParams({ period: statsPeriod });
+      const range = buildQueryParams();
+      if (range.from) params.set("from", range.from);
+      if (range.to) params.set("to", range.to);
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/orders/dashboard/export?${params.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${session.user.access_token}`,
+          },
+        },
+      );
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        message.error(err?.message || "Xuất Excel thất bại");
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `avenza-thong-ke-${statsPeriod}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      message.success("Đã tải file Excel");
+    } catch {
+      message.error("Không thể xuất Excel");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const renderBarChart = (data: Array<{ name: string; value: number }>) => {
     const maxValue = Math.max(...data.map((item) => item.value), 1);
@@ -147,15 +254,24 @@ const AdminCard = () => {
     );
   };
 
+  const maxSeriesRevenue = Math.max(
+    ...timeseries.map((r) => r.revenue),
+    1,
+  );
+
   return (
     <Spin spinning={loading}>
       <Row gutter={16} style={{ marginBottom: 16 }}>
-        <Col xs={24} md={12}>
-          <Card title="Filter theo khoảng thời gian" bordered>
+        <Col xs={24} lg={14}>
+          <Card title="Lọc theo khoảng thời gian" bordered>
             <DatePicker.RangePicker
               style={{ width: "100%" }}
               onChange={(_, dateStrings) =>
-                setDateRange(dateStrings as [string, string] | null)
+                setDateRange(
+                  dateStrings[0] && dateStrings[1]
+                    ? (dateStrings as [string, string])
+                    : null,
+                )
               }
             />
             {dateRange ? (
@@ -171,30 +287,138 @@ const AdminCard = () => {
                   Từ {dateRange[0]} đến {dateRange[1]}
                 </Typography.Text>
                 <Typography.Link onClick={() => setDateRange(null)}>
-                  Xóa
+                  Xóa bộ lọc
                 </Typography.Link>
               </div>
             ) : null}
           </Card>
         </Col>
+        <Col xs={24} lg={10}>
+          <Card title="Thống kê & xuất báo cáo" bordered>
+            <Segmented
+              block
+              options={PERIOD_OPTIONS}
+              value={statsPeriod}
+              onChange={(value) => setStatsPeriod(value as StatsPeriod)}
+              style={{ marginBottom: 12 }}
+            />
+            <Button
+              type="primary"
+              icon={<DownloadOutlined />}
+              loading={exporting}
+              onClick={handleExportExcel}
+              block
+            >
+              Xuất Excel
+            </Button>
+          </Card>
+        </Col>
       </Row>
+
+      <Card
+        title={`Thống kê ${periodColumnTitle.toLowerCase()}`}
+        bordered
+        style={{ marginBottom: 16 }}
+      >
+        {timeseries.length === 0 ? (
+          <Typography.Text>Không có dữ liệu trong khoảng đã chọn.</Typography.Text>
+        ) : (
+          <>
+            <div style={{ marginBottom: 16 }}>
+              {timeseries.map((row) => (
+                <div key={row.period} style={{ marginBottom: 10 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginBottom: 4,
+                    }}
+                  >
+                    <Typography.Text strong>{row.period}</Typography.Text>
+                    <Typography.Text>
+                      {row.orderCount} đơn —{" "}
+                      {row.revenue.toLocaleString("vi-VN")} đ
+                    </Typography.Text>
+                  </div>
+                  <div
+                    style={{
+                      background: "#f0f0f0",
+                      borderRadius: 8,
+                      overflow: "hidden",
+                      height: 12,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${(row.revenue / maxSeriesRevenue) * 100}%`,
+                        background: "#fa8c16",
+                        height: "100%",
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Table
+              size="small"
+              pagination={false}
+              rowKey="period"
+              dataSource={timeseries}
+              columns={[
+                { title: periodColumnTitle, dataIndex: "period", key: "period" },
+                {
+                  title: "Số đơn",
+                  dataIndex: "orderCount",
+                  key: "orderCount",
+                  align: "right",
+                },
+                {
+                  title: "Doanh thu",
+                  dataIndex: "revenue",
+                  key: "revenue",
+                  align: "right",
+                  render: (v: number) => `${v.toLocaleString("vi-VN")} đ`,
+                },
+              ]}
+              summary={() => (
+                <Table.Summary.Row>
+                  <Table.Summary.Cell index={0}>
+                    <Typography.Text strong>Tổng cộng</Typography.Text>
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell index={1} align="right">
+                    <Typography.Text strong>
+                      {timeseriesTotals.orderCount}
+                    </Typography.Text>
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell index={2} align="right">
+                    <Typography.Text strong>
+                      {timeseriesTotals.revenue.toLocaleString("vi-VN")} đ
+                    </Typography.Text>
+                  </Table.Summary.Cell>
+                </Table.Summary.Row>
+              )}
+            />
+          </>
+        )}
+      </Card>
+
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Total Users" bordered>
+          <Card title="Tổng người dùng" bordered>
             <div style={{ fontSize: 24, fontWeight: "bold", color: "#1890ff" }}>
               {orderStats.totalUsers}
             </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Active Users" bordered>
+          <Card title="Người dùng hoạt động" bordered>
             <div style={{ fontSize: 24, fontWeight: "bold", color: "#52c41a" }}>
               {orderStats.activeUsers}
             </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Inactive Users" bordered>
+          <Card title="Người dùng không hoạt động" bordered>
             <div style={{ fontSize: 24, fontWeight: "bold", color: "#ff4d4f" }}>
               {orderStats.inactiveUsers}
             </div>
@@ -203,7 +427,7 @@ const AdminCard = () => {
       </Row>
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Total Orders" bordered>
+          <Card title="Tổng đơn hàng" bordered>
             <div style={{ fontSize: 24, fontWeight: "bold", color: "#722ed1" }}>
               {orderStats.totalOrders}
             </div>
@@ -247,28 +471,28 @@ const AdminCard = () => {
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Total Products" bordered>
+          <Card title="Tổng sản phẩm" bordered>
             <div style={{ fontSize: 24, fontWeight: "bold", color: "#722ed1" }}>
               {orderStats.totalProducts}
             </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Total Categories" bordered>
+          <Card title="Tổng danh mục" bordered>
             <div style={{ fontSize: 24, fontWeight: "bold", color: "#722ed1" }}>
               {orderStats.totalCategories}
             </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Total Reviews" bordered>
+          <Card title="Tổng đánh giá" bordered>
             <div style={{ fontSize: 24, fontWeight: "bold", color: "#722ed1" }}>
               {orderStats.totalReviews}
             </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Total Payments" bordered>
+          <Card title="Tổng thanh toán" bordered>
             <div style={{ fontSize: 24, fontWeight: "bold", color: "#722ed1" }}>
               {orderStats.totalPayments}
             </div>
@@ -277,14 +501,14 @@ const AdminCard = () => {
       </Row>
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Total Carts" bordered>
+          <Card title="Tổng giỏ hàng" bordered>
             <div style={{ fontSize: 24, fontWeight: "bold", color: "#722ed1" }}>
               {orderStats.totalCarts}
             </div>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Order Status" bordered>
+          <Card title="Trạng thái đơn hàng" bordered>
             {Object.keys(orderStats.orderStatuses).length === 0 ? (
               <Typography.Text>Chưa có đơn hàng.</Typography.Text>
             ) : (
@@ -300,7 +524,7 @@ const AdminCard = () => {
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card title="Payment Status" bordered>
+          <Card title="Trạng thái thanh toán" bordered>
             {Object.keys(orderStats.paymentStatuses).length === 0 ? (
               <Typography.Text>Chưa có thanh toán.</Typography.Text>
             ) : (
@@ -318,7 +542,7 @@ const AdminCard = () => {
       </Row>
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col xs={24} md={12}>
-          <Card title="Order Status Chart" bordered>
+          <Card title="Biểu đồ trạng thái đơn" bordered>
             {orderStatusChart.length ? (
               renderBarChart(orderStatusChart)
             ) : (
@@ -327,7 +551,7 @@ const AdminCard = () => {
           </Card>
         </Col>
         <Col xs={24} md={12}>
-          <Card title="Payment Status Chart" bordered>
+          <Card title="Biểu đồ trạng thái thanh toán" bordered>
             {paymentStatusChart.length ? (
               renderBarChart(paymentStatusChart)
             ) : (
@@ -336,14 +560,14 @@ const AdminCard = () => {
           </Card>
         </Col>
       </Row>
-      <Card title="Top Products" bordered>
+      <Card title="Sản phẩm bán chạy" bordered>
         {orderStats.topProducts.length === 0 ? (
           <Typography.Text>Không có sản phẩm nổi bật.</Typography.Text>
         ) : (
           orderStats.topProducts.map((item, index) => (
             <div key={item._id} style={{ marginBottom: 12 }}>
               <Typography.Text strong>{index + 1}. </Typography.Text>
-              <Typography.Text>{item.name}</Typography.Text>
+              <Typography.Text>{item.name || item._id}</Typography.Text>
               <Typography.Text type="secondary">
                 {" "}
                 — {item.quantity} sản phẩm

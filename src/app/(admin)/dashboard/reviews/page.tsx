@@ -17,6 +17,7 @@ const parseNumberParam = (value: string | string[] | undefined, fallback: number
 const ManageReviewPage = async (props: IProps) => {
   const current = parseNumberParam(props?.searchParams?.current, 1);
   const pageSize = parseNumberParam(props?.searchParams?.pageSize, 20);
+  const search = props?.searchParams?.search ?? "";
   const session = await auth();
 
   const res = await sendRequest<IBackendRes<any>>({
@@ -25,6 +26,7 @@ const ManageReviewPage = async (props: IProps) => {
     queryParams: {
       current,
       pageSize,
+      ...(search && { search }),
     },
     headers: {
       Authorization: `Bearer ${session?.user?.access_token}`,

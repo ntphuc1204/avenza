@@ -6,7 +6,7 @@ import { DeleteTwoTone, EditTwoTone } from "@ant-design/icons";
 
 import { useState } from "react";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { sendRequest } from "@/utils/api";
 
@@ -36,7 +36,12 @@ const SupplierTable = ({ suppliers, accessToken }: IProps) => {
 
   const [form] = Form.useForm();
 
-  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { replace, refresh } = useRouter();
+  const [searchText, setSearchText] = useState(
+    searchParams.get("search") ?? "",
+  );
 
   const handleDelete = async (id: string) => {
     if (!accessToken) {
@@ -61,7 +66,7 @@ const SupplierTable = ({ suppliers, accessToken }: IProps) => {
       if (res?.data) {
         message.success("Xóa nhà cung cấp thành công");
 
-        router.refresh();
+        refresh();
       } else {
         message.error(res?.message || "Xóa nhà cung cấp thất bại");
       }
@@ -129,7 +134,7 @@ const SupplierTable = ({ suppliers, accessToken }: IProps) => {
 
         form.resetFields();
 
-        router.refresh();
+        refresh();
       } else {
         message.error(res?.message || "Thao tác thất bại");
       }
@@ -140,6 +145,16 @@ const SupplierTable = ({ suppliers, accessToken }: IProps) => {
     }
   };
 
+  const handleSearch = (value: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (value.trim()) {
+      params.set("search", value.trim());
+    } else {
+      params.delete("search");
+    }
+    replace(`${pathname}?${params.toString()}`);
+  };
+
   return (
     <div className="page-wrapper">
       {/* HEADER */}
@@ -148,6 +163,15 @@ const SupplierTable = ({ suppliers, accessToken }: IProps) => {
         <h2 className="page-title">Quản lý nhà cung cấp</h2>
 
         <div className="page-actions">
+          <Input.Search
+            placeholder="Tìm theo tên, email, SĐT, địa chỉ"
+            allowClear
+            enterButton="Tìm"
+            value={searchText}
+            style={{ width: 300, marginRight: 8 }}
+            onChange={(e) => setSearchText(e.target.value)}
+            onSearch={handleSearch}
+          />
           <Button
             type="primary"
             onClick={() => {

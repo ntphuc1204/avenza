@@ -569,8 +569,8 @@ const HomePage = () => {
           ) : (
             categories.map((category) => (
               <Tag
-                key={category._id}
-                color={selectedCategory === category._id ? "blue" : "default"}
+                key={category.id}
+                color={selectedCategory === category.id ? "blue" : "default"}
                 style={{
                   cursor: "pointer",
                   padding: "8px 16px",

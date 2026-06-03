@@ -16,7 +16,7 @@ import {
 import { DeleteTwoTone, EditTwoTone } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { sendRequest } from "@/utils/api";
 
 interface IDiscount {
@@ -42,8 +42,13 @@ interface IProps {
 }
 
 const DiscountTable = ({ data, accessToken }: IProps) => {
-  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { replace, refresh } = useRouter();
   const [form] = Form.useForm();
+  const [searchText, setSearchText] = useState(
+    searchParams.get("search") ?? "",
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDiscount, setEditingDiscount] = useState<IDiscount | null>(null);
   const [loading, setLoading] = useState(false);
@@ -122,10 +127,21 @@ const DiscountTable = ({ data, accessToken }: IProps) => {
       setIsModalOpen(false);
       setEditingDiscount(null);
       form.resetFields();
-      router.refresh();
+      refresh();
     } else {
       message.error(res?.message || "Thao tác thất bại");
     }
+  };
+
+  const handleSearch = (value: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (value.trim()) {
+      params.set("search", value.trim());
+    } else {
+      params.delete("search");
+    }
+    params.set("current", "1");
+    replace(`${pathname}?${params.toString()}`);
   };
 
   const handleDelete = async (id: string) => {
@@ -145,7 +161,7 @@ const DiscountTable = ({ data, accessToken }: IProps) => {
 
     if (res?.data) {
       message.success("Đã xóa voucher");
-      router.refresh();
+      refresh();
     } else {
       message.error(res?.message || "Xóa voucher thất bại");
     }
@@ -158,6 +174,15 @@ const DiscountTable = ({ data, accessToken }: IProps) => {
       <div className="page-header">
         <h2 className="page-title">Quản lý voucher</h2>
         <div className="page-actions">
+          <Input.Search
+            placeholder="Tìm theo mã, tiêu đề, mô tả, trạng thái"
+            allowClear
+            enterButton="Tìm"
+            value={searchText}
+            style={{ width: 300, marginRight: 8 }}
+            onChange={(e) => setSearchText(e.target.value)}
+            onSearch={handleSearch}
+          />
           <Button type="primary" onClick={openCreate}>
             + Thêm voucher
           </Button>

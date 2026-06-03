@@ -9,6 +9,7 @@ interface IProps {
 const ManageUserPage = async (props: IProps) => {
   const current = props?.searchParams?.current ?? 1;
   const pageSize = props?.searchParams?.pageSize ?? 10;
+  const search = props?.searchParams?.search ?? "";
   const session = await auth();
 
   const res = await sendRequest<IBackendRes<any>>({
@@ -17,6 +18,7 @@ const ManageUserPage = async (props: IProps) => {
     queryParams: {
       current,
       pageSize,
+      ...(search && { search }),
     },
     headers: {
       Authorization: `Bearer ${session?.user?.access_token}`,
