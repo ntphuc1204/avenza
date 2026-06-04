@@ -233,7 +233,7 @@ const ProfilePage = () => {
                     message: "Vui lòng nhập số điện thoại",
                   },
                   {
-                    pattern: /^(0[3|5|7|8|9])[0-9]{8}$/,
+                    pattern: /^(0(3|5|7|8|9))[0-9]{8}$/,
                     message: "Số điện thoại không hợp lệ",
                   },
                 ]}

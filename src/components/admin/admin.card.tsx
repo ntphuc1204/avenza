@@ -17,6 +17,7 @@ import { DownloadOutlined } from "@ant-design/icons";
 import { useEffect, useMemo, useState } from "react";
 import { sendRequest } from "@/utils/api";
 import { useSession } from "next-auth/react";
+import { LineChart, PieChart, BarChart } from "./charts";
 
 type StatsPeriod = "day" | "month" | "year";
 
@@ -175,11 +176,7 @@ const AdminCard = () => {
   );
 
   const periodColumnTitle =
-    statsPeriod === "day"
-      ? "Ngày"
-      : statsPeriod === "month"
-        ? "Tháng"
-        : "Năm";
+    statsPeriod === "day" ? "Ngày" : statsPeriod === "month" ? "Tháng" : "Năm";
 
   const handleExportExcel = async () => {
     if (!session?.user?.access_token) return;
@@ -222,42 +219,6 @@ const AdminCard = () => {
       setExporting(false);
     }
   };
-
-  const renderBarChart = (data: Array<{ name: string; value: number }>) => {
-    const maxValue = Math.max(...data.map((item) => item.value), 1);
-    return (
-      <div>
-        {data.map((item) => (
-          <div key={item.name} style={{ marginBottom: 10 }}>
-            <Typography.Text strong>{item.name}</Typography.Text>
-            <div
-              style={{
-                background: "#f0f0f0",
-                borderRadius: 8,
-                overflow: "hidden",
-                height: 14,
-                marginTop: 6,
-              }}
-            >
-              <div
-                style={{
-                  width: `${(item.value / maxValue) * 100}%`,
-                  background: "#1890ff",
-                  height: "100%",
-                }}
-              />
-            </div>
-            <Typography.Text type="secondary"> {item.value}</Typography.Text>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  const maxSeriesRevenue = Math.max(
-    ...timeseries.map((r) => r.revenue),
-    1,
-  );
 
   return (
     <Spin spinning={loading}>
@@ -316,56 +277,32 @@ const AdminCard = () => {
       </Row>
 
       <Card
-        title={`Thống kê ${periodColumnTitle.toLowerCase()}`}
+        title={`Biểu đồ thống kê ${periodColumnTitle.toLowerCase()}`}
         bordered
         style={{ marginBottom: 16 }}
       >
         {timeseries.length === 0 ? (
-          <Typography.Text>Không có dữ liệu trong khoảng đã chọn.</Typography.Text>
+          <Typography.Text>
+            Không có dữ liệu trong khoảng đã chọn.
+          </Typography.Text>
         ) : (
           <>
-            <div style={{ marginBottom: 16 }}>
-              {timeseries.map((row) => (
-                <div key={row.period} style={{ marginBottom: 10 }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      marginBottom: 4,
-                    }}
-                  >
-                    <Typography.Text strong>{row.period}</Typography.Text>
-                    <Typography.Text>
-                      {row.orderCount} đơn —{" "}
-                      {row.revenue.toLocaleString("vi-VN")} đ
-                    </Typography.Text>
-                  </div>
-                  <div
-                    style={{
-                      background: "#f0f0f0",
-                      borderRadius: 8,
-                      overflow: "hidden",
-                      height: 12,
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: `${(row.revenue / maxSeriesRevenue) * 100}%`,
-                        background: "#fa8c16",
-                        height: "100%",
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <LineChart
+              data={timeseries}
+              title={`Doanh thu và số đơn hàng ${periodColumnTitle.toLowerCase()}`}
+              height={400}
+            />
             <Table
               size="small"
               pagination={false}
               rowKey="period"
               dataSource={timeseries}
               columns={[
-                { title: periodColumnTitle, dataIndex: "period", key: "period" },
+                {
+                  title: periodColumnTitle,
+                  dataIndex: "period",
+                  key: "period",
+                },
                 {
                   title: "Số đơn",
                   dataIndex: "orderCount",
@@ -542,9 +479,9 @@ const AdminCard = () => {
       </Row>
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col xs={24} md={12}>
-          <Card title="Biểu đồ trạng thái đơn" bordered>
+          <Card title="Biểu đồ trạng thái đơn hàng" bordered>
             {orderStatusChart.length ? (
-              renderBarChart(orderStatusChart)
+              <PieChart data={orderStatusChart} height={350} />
             ) : (
               <Typography.Text>Không có dữ liệu.</Typography.Text>
             )}
@@ -553,27 +490,31 @@ const AdminCard = () => {
         <Col xs={24} md={12}>
           <Card title="Biểu đồ trạng thái thanh toán" bordered>
             {paymentStatusChart.length ? (
-              renderBarChart(paymentStatusChart)
+              <PieChart data={paymentStatusChart} height={350} />
             ) : (
               <Typography.Text>Không có dữ liệu.</Typography.Text>
             )}
           </Card>
         </Col>
       </Row>
-      <Card title="Sản phẩm bán chạy" bordered>
+      <Card
+        title="Sản phẩm bán chạy nhất"
+        bordered
+        style={{ marginBottom: 16 }}
+      >
         {orderStats.topProducts.length === 0 ? (
           <Typography.Text>Không có sản phẩm nổi bật.</Typography.Text>
         ) : (
-          orderStats.topProducts.map((item, index) => (
-            <div key={item._id} style={{ marginBottom: 12 }}>
-              <Typography.Text strong>{index + 1}. </Typography.Text>
-              <Typography.Text>{item.name || item._id}</Typography.Text>
-              <Typography.Text type="secondary">
-                {" "}
-                — {item.quantity} sản phẩm
-              </Typography.Text>
-            </div>
-          ))
+          <BarChart
+            data={orderStats.topProducts.map((item) => ({
+              name: item.name || item._id,
+              value: item.quantity,
+            }))}
+            title="Top sản phẩm bán chạy"
+            xLabel="Sản phẩm"
+            yLabel="Số lượng"
+            height={400}
+          />
         )}
       </Card>
       <Divider />
