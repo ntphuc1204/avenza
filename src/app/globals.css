@@ -231,7 +231,7 @@ body {
 }
 
 /* =========================
-   STATUS
+  STATUS
 ========================= */
 
 .status-badge {
@@ -254,7 +254,7 @@ body {
 }
 
 /* =========================
-   ACTION
+  ACTION
 ========================= */
 
 .action-group {
@@ -277,7 +277,6 @@ body {
   display: flex;
   justify-content: flex-end;
   width: 100%;
-  overflow-x: auto;
 }
 
 @media (max-width: 1200px) {

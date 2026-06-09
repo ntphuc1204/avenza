@@ -76,7 +76,14 @@ const ProductList = ({ products }: { products?: any[] }) => {
   if (!products?.length) return null;
 
   return (
-    <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+    <div
+      style={{
+        marginTop: 10,
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+      }}
+    >
       {products.slice(0, 4).map((p) => (
         <div
           key={p._id}
@@ -143,7 +150,34 @@ const AiChatPanel = ({
       if (!silent) setHistoryLoading(true);
       try {
         const items = await fetchAiHistory(accessToken);
-        setMessages(mapHistoryItems(items));
+        // map and remove consecutive duplicate entries (same sender + same message)
+        const mapped = mapHistoryItems(items);
+        const deduped: ChatMessage[] = [];
+        for (const it of mapped) {
+          if (
+            deduped.length === 0 ||
+            deduped[deduped.length - 1].sender !== it.sender ||
+            deduped[deduped.length - 1].message !== it.message
+          ) {
+            deduped.push(it);
+          }
+        }
+
+        setMessages((prev) => {
+          if (!silent) return deduped;
+
+          // merge local unsaved user messages (ids starting with 'user-')
+          const localUser = prev.filter((m) => m.id?.startsWith?.("user-"));
+
+          const extras = localUser.filter(
+            (lu) =>
+              !deduped.some(
+                (d) => d.sender === lu.sender && d.message === lu.message,
+              ),
+          );
+
+          return [...deduped, ...extras];
+        });
       } catch (err: any) {
         if (!silent) {
           message.error(err?.message || "Không tải được lịch sử");
@@ -179,11 +213,51 @@ const AiChatPanel = ({
     const userId = `user-${Date.now()}`;
     const aiId = `ai-${Date.now()}`;
 
+    console.debug("[AiChat] append user", { userId, userMsg });
     setMessages((prev) => [
       ...prev,
       { id: userId, sender: "user", message: userMsg },
       { id: aiId, sender: "ai", message: "", streaming: true },
     ]);
+    // sanitize AI text to remove accidental repeats/echoes of the user question
+    const sanitizeAiText = (txt: string, userQ: string) => {
+      if (!txt) return txt;
+      let t = String(txt || "");
+      const u = String(userQ || "").trim();
+
+      if (!u) return t.trim();
+
+      const normalize = (s: string) =>
+        String(s || "")
+          .toLowerCase()
+          .replace(/[^^\p{L}\p{N}\s]/gu, "")
+          .replace(/\s+/g, " ")
+          .trim();
+
+      try {
+        const nT = normalize(t);
+        const nU = normalize(u);
+
+        if (nU && nT.endsWith(nU)) {
+          const idx = t.toLowerCase().lastIndexOf(u.toLowerCase());
+          if (idx >= 0) t = t.slice(0, idx);
+        }
+
+        if (nU && nT.startsWith(nU)) {
+          const idx = t.toLowerCase().indexOf(u.toLowerCase());
+          if (idx === 0) t = t.slice(u.length);
+        }
+      } catch (err) {
+        if (t.trim().endsWith(u)) {
+          const idx = t.lastIndexOf(u);
+          if (idx >= 0) t = t.slice(0, idx);
+        }
+      }
+
+      const out = t.trim();
+      if (!out) return String(txt || "").trim();
+      return out;
+    };
 
     try {
       await streamAiChat(accessToken, userMsg, {
@@ -200,17 +274,28 @@ const AiChatPanel = ({
           }
         },
         onChunk: (_, fullText) => {
-          updateAiMessage(aiId, { message: fullText });
+          console.debug("[AiChat] chunk raw", { aiId, fullText });
+          const sanitized = sanitizeAiText(fullText, userMsg);
+          console.debug("[AiChat] chunk sanitized", { aiId, sanitized });
+          updateAiMessage(aiId, { message: sanitized });
         },
         onError: (err) => {
           message.error(err);
         },
         onDone: async (result) => {
+          const raw =
+            result.text ||
+            result.error ||
+            "AI không trả lời. Vui lòng thử lại.";
+          const sanitized = sanitizeAiText(raw, userMsg);
+          console.debug("[AiChat] onDone", {
+            aiId,
+            raw,
+            sanitized,
+            meta: result.meta,
+          });
           updateAiMessage(aiId, {
-            message:
-              result.text ||
-              result.error ||
-              "AI không trả lời. Vui lòng thử lại.",
+            message: sanitized,
             meta: result.meta,
             streaming: false,
           });
@@ -338,7 +423,12 @@ const AiChatPanel = ({
                         {INTENT_LABELS[item.meta.intent] || item.meta.intent}
                       </Tag>
                     )}
-                    <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                    <div
+                      style={{
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
+                      }}
+                    >
                       {item.message}
                       {item.streaming && !item.message && (
                         <Text type="secondary">Đang trả lời...</Text>

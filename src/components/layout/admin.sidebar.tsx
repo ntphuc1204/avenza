@@ -236,12 +236,6 @@ const AdminSideBar = () => {
           ),
           icon: <BellOutlined />,
         },
-
-        {
-          key: "ai",
-          label: <Link href="/dashboard/ai">Trợ lý AI</Link>,
-          icon: <RobotOutlined />,
-        },
       ],
     },
   ];

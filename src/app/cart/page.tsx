@@ -139,6 +139,18 @@ const CartPage = () => {
 
       // update badge realtime
       window.dispatchEvent(new Event("cartUpdated"));
+      return;
+    }
+
+    // show backend error message if available
+    try {
+      const msg =
+        res?.message ||
+        (res?.error && res.error?.message) ||
+        "Cập nhật giỏ hàng thất bại";
+      notification.error({ message: msg });
+    } catch (err) {
+      notification.error({ message: "Cập nhật giỏ hàng thất bại" });
     }
   };
 
