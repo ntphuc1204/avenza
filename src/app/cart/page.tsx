@@ -59,7 +59,10 @@ const CartPage = () => {
   }, [cart, selectedIds]);
 
   const selectedTotal = useMemo(() => {
-    return selectedItems.reduce((s: number, it: any) => s + (it.price || 0) * (it.quantity || 0), 0);
+    return selectedItems.reduce(
+      (s: number, it: any) => s + (it.price || 0) * (it.quantity || 0),
+      0,
+    );
   }, [selectedItems]);
 
   const finalPrice = Math.max(selectedTotal - discountAmount, 0);
@@ -403,13 +406,29 @@ const CartPage = () => {
       <Row gutter={[24, 24]}>
         <Col xs={24} sm={24} md={24} lg={16} xl={16}>
           <Card loading={loading}>
-            <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div
+              style={{
+                marginBottom: 12,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
               <Checkbox
-                indeterminate={selectedIds.length > 0 && selectedIds.length < (cart?.items || []).length}
-                checked={cart?.items?.length && selectedIds.length === (cart?.items || []).length}
+                indeterminate={
+                  selectedIds.length > 0 &&
+                  selectedIds.length < (cart?.items || []).length
+                }
+                checked={
+                  cart?.items?.length &&
+                  selectedIds.length === (cart?.items || []).length
+                }
                 onChange={(e) => {
                   const checked = e.target.checked;
-                  if (checked) setSelectedIds((cart?.items || []).map((it: any) => it.productId));
+                  if (checked)
+                    setSelectedIds(
+                      (cart?.items || []).map((it: any) => it.productId),
+                    );
                   else setSelectedIds([]);
                   setSelectedDiscount(null);
                 }}
@@ -420,26 +439,29 @@ const CartPage = () => {
             <List
               dataSource={cart?.items || []}
               renderItem={(item: any) => (
-                    <List.Item
+                <List.Item
                   actions={[
                     <Button danger onClick={() => removeItem(item.productId)}>
                       Xóa
                     </Button>,
                   ]}
                 >
-                      <div style={{ marginRight: 12 }}>
-                        <Checkbox
-                          checked={selectedIds.includes(item.productId)}
-                          onChange={(e) => {
-                            const checked = e.target.checked;
-                            setSelectedIds((prev) => {
-                              if (checked) return Array.from(new Set([...prev, item.productId]));
-                              return prev.filter((id) => id !== item.productId);
-                            });
-                            setSelectedDiscount(null);
-                          }}
-                        />
-                      </div>
+                  <div style={{ marginRight: 12 }}>
+                    <Checkbox
+                      checked={selectedIds.includes(item.productId)}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setSelectedIds((prev) => {
+                          if (checked)
+                            return Array.from(
+                              new Set([...prev, item.productId]),
+                            );
+                          return prev.filter((id) => id !== item.productId);
+                        });
+                        setSelectedDiscount(null);
+                      }}
+                    />
+                  </div>
                   <List.Item.Meta
                     title={item.name}
                     description={
