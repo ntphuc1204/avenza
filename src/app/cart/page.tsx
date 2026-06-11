@@ -17,6 +17,7 @@ import {
   Modal,
   Select,
   Tag,
+  Checkbox,
 } from "antd";
 import { Tooltip } from "antd";
 import { useEffect, useMemo, useState } from "react";
@@ -45,11 +46,23 @@ const CartPage = () => {
 
   const [selectedDiscount, setSelectedDiscount] = useState<any>(null);
 
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
   const [discountLoading, setDiscountLoading] = useState(false);
 
   const discountAmount = selectedDiscount?.discountAmount || 0;
 
-  const finalPrice = Math.max((cart?.totalPrice || 0) - discountAmount, 0);
+  const selectedItems = useMemo(() => {
+    if (!cart?.items?.length) return [];
+    if (!selectedIds?.length) return [];
+    return cart.items.filter((it: any) => selectedIds.includes(it.productId));
+  }, [cart, selectedIds]);
+
+  const selectedTotal = useMemo(() => {
+    return selectedItems.reduce((s: number, it: any) => s + (it.price || 0) * (it.quantity || 0), 0);
+  }, [selectedItems]);
+
+  const finalPrice = Math.max(selectedTotal - discountAmount, 0);
 
   // ================= PROFILE =================
   const loadProfile = async () => {
@@ -93,6 +106,8 @@ const CartPage = () => {
 
     setLoading(false);
     setCart(res?.data ?? res);
+    // reset selection when cart loads
+    setSelectedIds([]);
   };
 
   const loadMyDiscounts = async () => {
@@ -185,7 +200,7 @@ const CartPage = () => {
   };
 
   const applyDiscount = async (code: string) => {
-    if (!code || !cart?.items?.length) return;
+    if (!code || !selectedItems?.length) return;
 
     setDiscountLoading(true);
 
@@ -197,8 +212,8 @@ const CartPage = () => {
       },
       body: {
         code,
-        totalPrice: cart.totalPrice,
-        items: cart.items.map((item: any) => ({
+        totalPrice: selectedTotal,
+        items: selectedItems.map((item: any) => ({
           productId: item.productId,
           quantity: item.quantity,
           price: item.price,
@@ -230,7 +245,7 @@ const CartPage = () => {
         Authorization: `Bearer ${session?.user?.access_token}`,
       },
       body: {
-        products: cart.items.map((item: any) => ({
+        products: selectedItems.map((item: any) => ({
           productId: item.productId,
           quantity: item.quantity,
         })),
@@ -255,7 +270,7 @@ const CartPage = () => {
       const orderData = {
         userId: userProfile?._id,
 
-        products: cart.items.map((item: any) => ({
+        products: selectedItems.map((item: any) => ({
           productId: item.productId,
           name: item.name,
           image: item.image,
@@ -263,7 +278,7 @@ const CartPage = () => {
           quantity: item.quantity,
         })),
 
-        totalPrice: cart.totalPrice,
+        totalPrice: selectedTotal,
 
         discountAmount,
 
@@ -331,7 +346,7 @@ const CartPage = () => {
       return;
     }
 
-    if (!cart?.items?.length) {
+    if (!selectedItems?.length) {
       notification.warning({
         message: "Giỏ hàng trống",
       });
@@ -388,16 +403,43 @@ const CartPage = () => {
       <Row gutter={[24, 24]}>
         <Col xs={24} sm={24} md={24} lg={16} xl={16}>
           <Card loading={loading}>
+            <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Checkbox
+                indeterminate={selectedIds.length > 0 && selectedIds.length < (cart?.items || []).length}
+                checked={cart?.items?.length && selectedIds.length === (cart?.items || []).length}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  if (checked) setSelectedIds((cart?.items || []).map((it: any) => it.productId));
+                  else setSelectedIds([]);
+                  setSelectedDiscount(null);
+                }}
+              >
+                Chọn tất cả
+              </Checkbox>
+            </div>
             <List
               dataSource={cart?.items || []}
               renderItem={(item: any) => (
-                <List.Item
+                    <List.Item
                   actions={[
                     <Button danger onClick={() => removeItem(item.productId)}>
                       Xóa
                     </Button>,
                   ]}
                 >
+                      <div style={{ marginRight: 12 }}>
+                        <Checkbox
+                          checked={selectedIds.includes(item.productId)}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setSelectedIds((prev) => {
+                              if (checked) return Array.from(new Set([...prev, item.productId]));
+                              return prev.filter((id) => id !== item.productId);
+                            });
+                            setSelectedDiscount(null);
+                          }}
+                        />
+                      </div>
                   <List.Item.Meta
                     title={item.name}
                     description={
@@ -467,8 +509,8 @@ const CartPage = () => {
           >
             <Card>
               <Statistic
-                title="Tổng tiền"
-                value={cart?.totalPrice || 0}
+                title="Tổng tiền (đã chọn)"
+                value={selectedTotal || 0}
                 suffix="₫"
               />
 
@@ -565,13 +607,13 @@ const CartPage = () => {
                   block
                   size="large"
                   loading={checkoutLoading}
-                  disabled={isMissingProfile}
+                  disabled={isMissingProfile || !selectedItems?.length}
                   style={{
                     height: 48,
                     fontWeight: 600,
                   }}
                 >
-                  Đặt hàng
+                  Đặt hàng ({selectedItems.length})
                 </Button>
                 {isMissingProfile && (
                   <div
