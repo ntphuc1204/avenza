@@ -8,6 +8,7 @@ import {
   Modal,
   Pagination,
   Popconfirm,
+  Tag,
 } from "antd";
 
 import { DeleteTwoTone, EditTwoTone } from "@ant-design/icons";
@@ -23,6 +24,8 @@ interface ICategory {
   name: string;
   slug?: string;
   description?: string;
+  status?: "ACTIVE" | "INACTIVE";
+  productCount?: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -59,7 +62,7 @@ const CategoryTable = ({ data, accessToken }: IProps) => {
     null,
   );
 
-  const [loadingDelete, setLoadingDelete] = useState<string | null>(null);
+  const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
   const [form] = Form.useForm();
 
@@ -72,12 +75,12 @@ const CategoryTable = ({ data, accessToken }: IProps) => {
 
   const handleDelete = async (id: string) => {
     if (!accessToken) {
-      message.error("Không tìm thấy quyền truy cập");
+      message.error("Khong tim thay quyen truy cap");
 
       return;
     }
 
-    setLoadingDelete(id);
+    setLoadingAction(id);
 
     try {
       const res = await sendRequest<IBackendRes<any>>({
@@ -91,22 +94,63 @@ const CategoryTable = ({ data, accessToken }: IProps) => {
       });
 
       if (res?.data) {
-        message.success("Xóa danh mục thành công");
+        message.success("Xoa vinh vien danh muc thanh cong");
 
         refresh();
       } else {
-        message.error(res?.message || "Xóa danh mục thất bại");
+        message.error(res?.message || "Xoa danh muc that bai");
       }
     } catch (error) {
-      message.error("Lỗi khi xóa danh mục");
+      message.error("Loi khi xoa danh muc");
     } finally {
-      setLoadingDelete(null);
+      setLoadingAction(null);
+    }
+  };
+
+  const handleChangeStatus = async (
+    id: string,
+    action: "activate" | "deactivate",
+  ) => {
+    if (!accessToken) {
+      message.error("Khong tim thay quyen truy cap");
+
+      return;
+    }
+
+    setLoadingAction(id);
+
+    try {
+      const res = await sendRequest<IBackendRes<any>>({
+        url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/categories/${id}/${action}`,
+
+        method: "PATCH",
+
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (res?.data) {
+        message.success(
+          action === "activate"
+            ? "Kich hoat danh muc thanh cong"
+            : "Ngung hoat dong danh muc thanh cong",
+        );
+
+        refresh();
+      } else {
+        message.error(res?.message || "Thao tac that bai");
+      }
+    } catch (error) {
+      message.error("Loi khi cap nhat trang thai danh muc");
+    } finally {
+      setLoadingAction(null);
     }
   };
 
   const handleSave = async (values: any) => {
     if (!accessToken) {
-      message.error("Không tìm thấy quyền truy cập");
+      message.error("Khong tim thay quyen truy cap");
 
       return;
     }
@@ -154,8 +198,8 @@ const CategoryTable = ({ data, accessToken }: IProps) => {
       if (res?.data) {
         message.success(
           editingCategory
-            ? "Cập nhật danh mục thành công"
-            : "Tạo danh mục thành công",
+            ? "Cap nhat danh muc thanh cong"
+            : "Tao danh muc thanh cong",
         );
 
         setIsModalOpen(false);
@@ -166,10 +210,10 @@ const CategoryTable = ({ data, accessToken }: IProps) => {
 
         refresh();
       } else {
-        message.error(res?.message || "Thao tác thất bại");
+        message.error(res?.message || "Thao tac that bai");
       }
     } catch (error) {
-      message.error("Lỗi khi lưu danh mục");
+      message.error("Loi khi luu danh muc");
     }
   };
 
@@ -193,16 +237,14 @@ const CategoryTable = ({ data, accessToken }: IProps) => {
 
   return (
     <div className="page-wrapper">
-      {/* HEADER */}
-
       <div className="page-header">
-        <h2 className="page-title">Quản lý danh mục</h2>
+        <h2 className="page-title">Quan ly danh muc</h2>
 
         <div className="page-actions">
           <Input.Search
-            placeholder="Tìm theo tên, slug, mô tả"
+            placeholder="Tim theo ten, slug, mo ta"
             allowClear
-            enterButton="Tìm"
+            enterButton="Tim"
             value={searchText}
             style={{ width: 280, marginRight: 8 }}
             onChange={(e) => setSearchText(e.target.value)}
@@ -218,86 +260,122 @@ const CategoryTable = ({ data, accessToken }: IProps) => {
               setIsModalOpen(true);
             }}
           >
-            + Thêm danh mục
+            + Them danh muc
           </Button>
         </div>
       </div>
-
-      {/* TABLE */}
 
       <div className="table-scroll">
         <table className="data-table">
           <thead>
             <tr>
-              <th>Tên danh mục</th>
-
+              <th>Ten danh muc</th>
               <th>Slug</th>
-
-              <th>Mô tả</th>
-
-              <th>Thời gian tạo</th>
-
-              <th className="sticky-column">Hành động</th>
+              <th>Mo ta</th>
+              <th>Trang thai</th>
+              <th>So san pham</th>
+              <th>Thoi gian tao</th>
+              <th className="sticky-column">Hanh dong</th>
             </tr>
           </thead>
 
           <tbody>
-            {categories.map((item) => (
-              <tr key={item._id}>
-                <td>
-                  <div className="table-name">{item.name}</div>
-                </td>
+            {categories.map((item) => {
+              const productCount = item.productCount ?? 0;
+              const isInactive = item.status === "INACTIVE";
+              const statusAction = isInactive ? "activate" : "deactivate";
 
-                <td>{item.slug || "-"}</td>
+              return (
+                <tr key={item._id}>
+                  <td>
+                    <div className="table-name">{item.name}</div>
+                  </td>
 
-                <td>
-                  <div className="table-subtext">{item.description || "-"}</div>
-                </td>
+                  <td>{item.slug || "-"}</td>
 
-                <td>
-                  {item.createdAt
-                    ? new Date(item.createdAt).toLocaleString("vi-VN")
-                    : "-"}
-                </td>
+                  <td>
+                    <div className="table-subtext">
+                      {item.description || "-"}
+                    </div>
+                  </td>
 
-                <td className="sticky-column">
-                  <div className="action-group">
-                    <EditTwoTone
-                      twoToneColor="#f57800"
-                      className="action-icon"
-                      onClick={() => {
-                        setEditingCategory(item);
+                  <td>
+                    <Tag color={isInactive ? "default" : "green"}>
+                      {isInactive ? "Ngung hoat dong" : "Hoat dong"}
+                    </Tag>
+                  </td>
 
-                        setIsModalOpen(true);
+                  <td>{productCount}</td>
 
-                        form.setFieldsValue({
-                          name: item.name,
-                          slug: item.slug,
-                          description: item.description,
-                        });
-                      }}
-                    />
+                  <td>
+                    {item.createdAt
+                      ? new Date(item.createdAt).toLocaleString("vi-VN")
+                      : "-"}
+                  </td>
 
-                    <Popconfirm
-                      title="Xóa danh mục?"
-                      onConfirm={() => handleDelete(item._id)}
-                      okText="Xóa"
-                      cancelText="Hủy"
-                    >
-                      <DeleteTwoTone
-                        twoToneColor="#ff4d4f"
+                  <td className="sticky-column">
+                    <div className="action-group">
+                      <EditTwoTone
+                        twoToneColor="#f57800"
                         className="action-icon"
+                        onClick={() => {
+                          setEditingCategory(item);
+
+                          setIsModalOpen(true);
+
+                          form.setFieldsValue({
+                            name: item.name,
+                            slug: item.slug,
+                            description: item.description,
+                          });
+                        }}
                       />
-                    </Popconfirm>
-                  </div>
-                </td>
-              </tr>
-            ))}
+
+                      <Popconfirm
+                        title={
+                          isInactive
+                            ? "Kich hoat danh muc?"
+                            : "Ngung hoat dong danh muc?"
+                        }
+                        onConfirm={() =>
+                          handleChangeStatus(item._id, statusAction)
+                        }
+                        okText={isInactive ? "Kich hoat" : "Ngung"}
+                        cancelText="Huy"
+                      >
+                        <Button
+                          size="small"
+                          loading={loadingAction === item._id}
+                        >
+                          {isInactive ? "Kich hoat" : "Ngung"}
+                        </Button>
+                      </Popconfirm>
+
+                      <Popconfirm
+                        title="Xoa vinh vien danh muc?"
+                        description={
+                          productCount > 0
+                            ? "Chi xoa duoc khi danh muc khong con san pham."
+                            : undefined
+                        }
+                        onConfirm={() => handleDelete(item._id)}
+                        okText="Xoa vinh vien"
+                        cancelText="Huy"
+                        disabled={productCount > 0}
+                      >
+                        <DeleteTwoTone
+                          twoToneColor={productCount > 0 ? "#bfbfbf" : "#ff4d4f"}
+                          className="action-icon"
+                        />
+                      </Popconfirm>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
-
-      {/* PAGINATION */}
 
       <div className="pagination-wrapper">
         <Pagination
@@ -308,15 +386,13 @@ const CategoryTable = ({ data, accessToken }: IProps) => {
           pageSizeOptions={["10", "20", "50", "100"]}
           onChange={handlePagination}
           showTotal={(total, range) =>
-            `${range[0]}-${range[1]} trong tổng ${total} danh mục`
+            `${range[0]}-${range[1]} trong tong ${total} danh muc`
           }
         />
       </div>
 
-      {/* MODAL */}
-
       <Modal
-        title={editingCategory ? "Cập nhật danh mục" : "Tạo mới danh mục"}
+        title={editingCategory ? "Cap nhat danh muc" : "Tao moi danh muc"}
         open={isModalOpen}
         onCancel={() => {
           setIsModalOpen(false);
@@ -326,16 +402,16 @@ const CategoryTable = ({ data, accessToken }: IProps) => {
           form.resetFields();
         }}
         onOk={() => form.submit()}
-        okText="Lưu"
+        okText="Luu"
       >
         <Form form={form} layout="vertical" onFinish={handleSave}>
           <Form.Item
             name="name"
-            label="Tên danh mục"
+            label="Ten danh muc"
             rules={[
-              { required: true, message: "Tên danh mục không được trống" },
-              { min: 3, message: "Tên tối thiểu 3 ký tự" },
-              { max: 255, message: "Tên tối đa 255 ký tự" },
+              { required: true, message: "Ten danh muc khong duoc trong" },
+              { min: 3, message: "Ten toi thieu 3 ky tu" },
+              { max: 255, message: "Ten toi da 255 ky tu" },
             ]}
           >
             <Input />
@@ -345,11 +421,11 @@ const CategoryTable = ({ data, accessToken }: IProps) => {
             name="slug"
             label="Slug"
             rules={[
-              { min: 3, message: "Slug tối thiểu 3 ký tự" },
-              { max: 255, message: "Slug tối đa 255 ký tự" },
+              { min: 3, message: "Slug toi thieu 3 ky tu" },
+              { max: 255, message: "Slug toi da 255 ky tu" },
               {
                 pattern: /^[a-z0-9-]+$/,
-                message: "Slug chỉ chứa chữ cái thường, số và dấu gạch ngang",
+                message: "Slug chi chua chu cai thuong, so va dau gach ngang",
               },
             ]}
           >
@@ -358,8 +434,8 @@ const CategoryTable = ({ data, accessToken }: IProps) => {
 
           <Form.Item
             name="description"
-            label="Mô tả"
-            rules={[{ max: 2000, message: "Mô tả tối đa 2000 ký tự" }]}
+            label="Mo ta"
+            rules={[{ max: 2000, message: "Mo ta toi da 2000 ky tu" }]}
           >
             <Input.TextArea rows={4} />
           </Form.Item>

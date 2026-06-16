@@ -15,6 +15,8 @@ const ManageSuppliersPage = async (props: IProps) => {
     method: "GET",
     queryParams: {
       ...(search && { search }),
+      includeInactive: true,
+      withProductCount: true,
     },
     headers: {
       Authorization: `Bearer ${session?.user?.access_token}`,

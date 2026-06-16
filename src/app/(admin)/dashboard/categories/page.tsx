@@ -20,6 +20,8 @@ const ManageCategoryPage = async (props: IProps) => {
       current,
       pageSize,
       ...(search && { search }),
+      includeInactive: true,
+      withProductCount: true,
     },
     headers: {
       Authorization: `Bearer ${session?.user?.access_token}`,
