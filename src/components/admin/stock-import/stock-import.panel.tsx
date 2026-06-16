@@ -33,8 +33,10 @@ const StockImportPanel = ({
 
   const onProductChange = (productId: string) => {
     const product = products.find((p) => p._id === productId);
-    if (product?.importPrice != null) {
-      form.setFieldsValue({ importPrice: product.importPrice });
+    if (product) {
+      form.setFieldsValue({
+        importPrice: product.importPrice ?? product.averageCostPrice ?? 0,
+      });
     }
   };
 
@@ -99,8 +101,7 @@ const StockImportPanel = ({
     {
       title: "Thời gian",
       dataIndex: "createdAt",
-      render: (v: string) =>
-        v ? new Date(v).toLocaleString("vi-VN") : "-",
+      render: (v: string) => (v ? new Date(v).toLocaleString("vi-VN") : "-"),
     },
   ];
 
@@ -123,7 +124,7 @@ const StockImportPanel = ({
               placeholder="Chọn sản phẩm"
               onChange={onProductChange}
               options={products.map((p) => ({
-                label: `${p.name} (tồn: ${p.stock ?? 0}, nhập: ${(p.importPrice ?? 0).toLocaleString("vi-VN")} đ)`,
+                label: `${p.name} (tồn: ${p.stock ?? 0}, giá vốn: ${(p.costPrice ?? p.importPrice ?? 0).toLocaleString("vi-VN")} đ)`,
                 value: p._id,
               }))}
             />

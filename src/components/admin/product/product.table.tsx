@@ -20,6 +20,7 @@ interface IProduct {
   description?: string;
   price: number;
   importPrice?: number;
+  averageCostPrice?: number;
   stock: number;
 
   // 👇 cho phép nhiều kiểu dữ liệu
@@ -251,17 +252,17 @@ const ProductTable = ({
                 {/* PRICE */}
                 <td>{item.price?.toLocaleString("vi-VN")} đ</td>
 
-                <td>{(item.importPrice ?? 0).toLocaleString("vi-VN")} đ</td>
+                <td>{(item.averageCostPrice ?? item.importPrice ?? 0).toLocaleString("vi-VN")} đ</td>
 
                 <td>
-                  {item.price > 0 && item.importPrice != null ? (
+                  {item.price > 0 && (item.averageCostPrice ?? item.importPrice) != null ? (
                     <span style={{ color: "#52c41a" }}>
-                      {(item.price - (item.importPrice ?? 0)).toLocaleString(
+                      {(item.price - (item.averageCostPrice ?? item.importPrice ?? 0)).toLocaleString(
                         "vi-VN",
-                      )}{" "}
+                      )} {" "}
                       đ (
                       {Math.round(
-                        ((item.price - (item.importPrice ?? 0)) / item.price) *
+                        ((item.price - (item.averageCostPrice ?? item.importPrice ?? 0)) / item.price) *
                           100,
                       )}
                       %)

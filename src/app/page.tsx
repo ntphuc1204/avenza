@@ -600,72 +600,6 @@ const HomePage = () => {
           ) : null}
         </div>
       </div>
-
-      {/* PRODUCTS */}
-      <div
-        style={{
-          ...cardStyle,
-          marginBottom: 24,
-        }}
-      >
-        <Row justify="space-between" align="middle">
-          <Col>
-            <Title level={4}>Sản phẩm</Title>
-          </Col>
-
-          <Col>
-            <Text type="secondary">{products.length} sản phẩm</Text>
-          </Col>
-        </Row>
-
-        <Row gutter={[24, 24]} style={{ marginTop: 12 }}>
-          {loading ? (
-            Array.from({ length: 8 }).map((_, index) => (
-              <Col key={index} xs={24} sm={12} md={8} lg={6}>
-                <Skeleton active />
-              </Col>
-            ))
-          ) : products.length ? (
-            products.map((product) => (
-              <Col key={product._id} xs={24} sm={12} md={8} lg={6}>
-                <ProductCard product={product} />
-              </Col>
-            ))
-          ) : (
-            <Col span={24}>
-              <Empty description="Không tìm thấy sản phẩm" />
-            </Col>
-          )}
-        </Row>
-      </div>
-
-      {/* TOP SELLING */}
-      <div style={cardStyle}>
-        <Row justify="space-between" align="middle">
-          <Col>
-            <Title level={4}>Sản phẩm bán chạy</Title>
-
-            <Text type="secondary">
-              Các sản phẩm được khách hàng mua nhiều nhất.
-            </Text>
-          </Col>
-        </Row>
-
-        <Row gutter={[24, 24]} style={{ marginTop: 16 }}>
-          {topProducts.length ? (
-            topProducts.slice(0, 4).map((product) => (
-              <Col key={product._id} xs={24} sm={12} md={8} lg={6}>
-                <ProductCard product={product} />
-              </Col>
-            ))
-          ) : (
-            <Col span={24}>
-              <Empty description="Không có sản phẩm bán chạy" />
-            </Col>
-          )}
-        </Row>
-      </div>
-
       {/* ALL PRODUCTS */}
       <div
         style={{
@@ -724,6 +658,33 @@ const HomePage = () => {
             />
           </div>
         )}
+      </div>
+
+      {/* TOP SELLING */}
+      <div style={{ ...cardStyle, marginTop: 16 }}>
+        <Row justify="space-between" align="middle">
+          <Col>
+            <Title level={4}>Sản phẩm bán chạy</Title>
+
+            <Text type="secondary">
+              Các sản phẩm được khách hàng mua nhiều nhất.
+            </Text>
+          </Col>
+        </Row>
+
+        <Row gutter={[24, 24]} style={{ marginTop: 16 }}>
+          {topProducts.length ? (
+            topProducts.slice(0, 4).map((product) => (
+              <Col key={product._id} xs={24} sm={12} md={8} lg={6}>
+                <ProductCard product={product} />
+              </Col>
+            ))
+          ) : (
+            <Col span={24}>
+              <Empty description="Không có sản phẩm bán chạy" />
+            </Col>
+          )}
+        </Row>
       </div>
 
       {/* BACK TO TOP */}

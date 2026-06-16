@@ -17,6 +17,9 @@ import {
   Select,
   Input,
   Tooltip,
+  Tabs,
+  Descriptions,
+  List,
 } from "antd";
 
 import { CopyOutlined } from "@ant-design/icons";
@@ -48,7 +51,9 @@ const OrdersPage = () => {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
   const [cancelLoading, setCancelLoading] = useState(false);
-
+  const [activeTab, setActiveTab] = useState("active");
+  const [detailModal, setDetailModal] = useState(false);
+  const [selectedDetail, setSelectedDetail] = useState<any>(null);
   const [cancelForm] = Form.useForm();
 
   const cancelReasons = [
@@ -271,7 +276,15 @@ const OrdersPage = () => {
         return orderStatus;
     }
   };
+  const activeOrders = orders.filter((order) =>
+    ["PENDING", "PROCESSING", "DELIVERING"].includes(order.orderStatus),
+  );
 
+  const historyOrders = orders.filter((order) =>
+    ["DELIVERED", "DELIVERY_FAILED", "CANCELLED"].includes(order.orderStatus),
+  );
+
+  const displayOrders = activeTab === "active" ? activeOrders : historyOrders;
   if (!session) {
     return (
       <GuestLayout>
@@ -327,85 +340,138 @@ const OrdersPage = () => {
             }}
           />
         </div>
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          style={{ marginTop: 20 }}
+          items={[
+            {
+              key: "active",
+              label: `Đơn chưa hoàn thành (${activeOrders.length})`,
+            },
+            {
+              key: "history",
+              label: `Lịch sử đặt hàng (${historyOrders.length})`,
+            },
+          ]}
+        />
       </div>
 
-      {orders.length ? (
-        <Row gutter={[24, 24]}>
-          {orders.map((order) => {
-            const isCancelled = order.orderStatus === "CANCELLED";
-            const products = order?.products ?? [];
+      {displayOrders.length ? (
+        <Card style={{ borderRadius: 20 }} bodyStyle={{ padding: 0 }}>
+          <List
+            loading={loading}
+            itemLayout="vertical"
+            dataSource={displayOrders}
+            renderItem={(order) => {
+              const products = order?.products ?? [];
 
-            return (
-              <Col key={order._id} xs={24} md={12}>
-                <Card
-                  hoverable
+              return (
+                <List.Item
+                  key={order._id}
+                  onClick={() => {
+                    setSelectedDetail(order);
+                    setDetailModal(true);
+                  }}
                   style={{
-                    height: "100%",
-                    borderRadius: 20,
-                    overflow: "hidden",
-                    boxShadow: "0 10px 35px rgba(0,0,0,0.08)",
-                    opacity: isCancelled ? 0.6 : 1,
-                    filter: isCancelled ? "grayscale(20%)" : "none",
-                    transition: "0.3s",
-                    border:
-                      order.orderStatus === "CANCEL_REQUEST"
-                        ? "1px solid #faad14"
-                        : undefined,
+                    padding: 20,
+                    cursor: "pointer",
+                    borderBottom: "1px solid #f0f0f0",
                   }}
                 >
-                  <Space
-                    direction="vertical"
-                    size={12}
+                  {/* Header */}
+                  <div
                     style={{
-                      width: "100%",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: 12,
+                      gap: 12,
+                      flexWrap: "wrap",
                     }}
                   >
                     <div
                       style={{
                         display: "flex",
-
-                        justifyContent: "space-between",
-
                         alignItems: "center",
+                        gap: 8,
                       }}
                     >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 8,
-                        }}
-                      >
-                        <Text strong>Đơn hàng #{order._id.slice(-8)}</Text>
-                        <Tooltip title="Sao chép mã đơn">
-                          <Button
-                            type="text"
-                            size="small"
-                            icon={<CopyOutlined />}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCopyOrderCode(order._id);
-                            }}
-                          />
-                        </Tooltip>
-                      </div>
+                      <Text strong>Đơn hàng #{order._id.slice(-8)}</Text>
 
-                      <Badge
-                        status={getBadgeStatus(
-                          order.orderStatus,
-                          order.cancelStatus,
-                          order.paymentStatus,
-                        )}
-                        text={getStatusText(
-                          order.orderStatus,
-                          order.cancelStatus,
-                          order.paymentStatus,
-                        )}
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<CopyOutlined />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCopyOrderCode(order._id);
+                        }}
                       />
                     </div>
 
-                    <Text>
-                      Thanh toán:{" "}
+                    <Badge
+                      status={getBadgeStatus(
+                        order.orderStatus,
+                        order.cancelStatus,
+                        order.paymentStatus,
+                      )}
+                      text={getStatusText(
+                        order.orderStatus,
+                        order.cancelStatus,
+                        order.paymentStatus,
+                      )}
+                    />
+                  </div>
+
+                  {/* Sản phẩm */}
+                  <div
+                    style={{
+                      marginBottom: 12,
+                    }}
+                  >
+                    {products.slice(0, 3).map((item: any) => (
+                      <div
+                        key={item.productId}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          marginBottom: 8,
+                        }}
+                      >
+                        <Text>{item.name}</Text>
+
+                        <Text>
+                          {item.quantity} ×{" "}
+                          {Number(item.price).toLocaleString("vi-VN")} ₫
+                        </Text>
+                      </div>
+                    ))}
+
+                    {products.length > 3 && (
+                      <Text type="secondary">
+                        Và {products.length - 3} sản phẩm khác...
+                      </Text>
+                    )}
+                  </div>
+
+                  {/* Footer */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                      gap: 12,
+                    }}
+                  >
+                    <div>
+                      <Text type="secondary">
+                        {new Date(order.createdAt).toLocaleString("vi-VN")}
+                      </Text>
+
+                      <br />
+
                       <Tag
                         color={
                           PAYMENT_STATUS_COLOR[order.paymentStatus] || "gold"
@@ -414,137 +480,43 @@ const OrdersPage = () => {
                         {PAYMENT_STATUS_LABEL[order.paymentStatus] ||
                           order.paymentStatus}
                       </Tag>
-                    </Text>
+                    </div>
 
-                    <Text>
-                      Giá trị:{" "}
-                      {Number(
-                        order.finalPrice || order.totalPrice,
-                      ).toLocaleString("vi-VN")}{" "}
-                      ₫
-                    </Text>
-
-                    {order.discountAmount > 0 ? (
-                      <Text type="secondary">
-                        Voucher {order.discountCode}: -{" "}
-                        {Number(order.discountAmount).toLocaleString("vi-VN")} ₫
+                    <div
+                      style={{
+                        textAlign: "right",
+                      }}
+                    >
+                      <Text strong>
+                        {Number(
+                          order.finalPrice || order.totalPrice,
+                        ).toLocaleString("vi-VN")}{" "}
+                        ₫
                       </Text>
-                    ) : null}
 
-                    <Text>
-                      Ngày: {new Date(order.createdAt).toLocaleString("vi-VN")}
-                    </Text>
+                      <br />
 
-                    <Divider />
-
-                    <Title level={5}>Sản phẩm ({products.length})</Title>
-
-                    {products.slice(0, 3).map((item: any) => (
-                      <div
-                        key={item.productId}
-                        style={{
-                          display: "flex",
-
-                          justifyContent: "space-between",
-
-                          gap: 12,
-                        }}
-                      >
-                        <Text>{item.name}</Text>
-
-                        <Text>
-                          {item.quantity} x{" "}
-                          {Number(item.price).toLocaleString("vi-VN")} ₫
-                        </Text>
-                      </div>
-                    ))}
-
-                    {products.length > 3 ? (
-                      <Text type="secondary">
-                        Và {products.length - 3} sản phẩm khác...
-                      </Text>
-                    ) : null}
-
-                    <Divider />
-
-                    <Space wrap>
-                      {/* CHƯA GỬI YÊU CẦU HỦY */}
                       {["PENDING", "PROCESSING"].includes(order.orderStatus) &&
                         order.cancelStatus !== "REQUESTED" && (
                           <Button
                             danger
-                            onClick={() => {
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setSelectedOrder(order);
-
                               setCancelModal(true);
                             }}
                           >
-                            Hủy đơn hàng
+                            Hủy đơn
                           </Button>
                         )}
-
-                      {/* ĐANG CHỜ ADMIN XÁC NHẬN */}
-                      {order.cancelStatus === "REQUESTED" && (
-                        <Button
-                          style={{
-                            background: "#faad14",
-                            borderColor: "#faad14",
-                            color: "#fff",
-                          }}
-                          disabled
-                          loading
-                        >
-                          Đang xác nhận hủy đơn
-                        </Button>
-                      )}
-
-                      {/* ĐÃ HỦY */}
-                      {order.orderStatus === "CANCELLED" && (
-                        <Tag color="red">Đơn hàng đã hủy</Tag>
-                      )}
-                    </Space>
-                    {(order.cancelStatus === "REQUESTED" ||
-                      order.orderStatus === "CANCELLED") && (
-                      <Card
-                        size="small"
-                        style={{
-                          background:
-                            order.orderStatus === "CANCELLED"
-                              ? "#fff2f0"
-                              : "#fffbe6",
-
-                          borderColor:
-                            order.orderStatus === "CANCELLED"
-                              ? "#ffccc7"
-                              : "#ffe58f",
-                        }}
-                      >
-                        <Text strong>Lý do hủy:</Text>
-
-                        <br />
-
-                        <Text>{order.cancelReason || "Không có lý do"}</Text>
-
-                        {order.cancelMessage && (
-                          <>
-                            <br />
-                            <br />
-
-                            <Text strong>Ghi chú:</Text>
-
-                            <br />
-
-                            <Text>{order.cancelMessage}</Text>
-                          </>
-                        )}
-                      </Card>
-                    )}
-                  </Space>
-                </Card>
-              </Col>
-            );
-          })}
-        </Row>
+                    </div>
+                  </div>
+                </List.Item>
+              );
+            }}
+          />
+        </Card>
       ) : (
         <Card
           style={{
@@ -557,7 +529,101 @@ const OrdersPage = () => {
           <Empty description="Chưa có đơn hàng" />
         </Card>
       )}
+      <Modal
+        title={`Chi tiết đơn #${selectedDetail?._id?.slice(-8)}`}
+        open={detailModal}
+        footer={null}
+        width={900}
+        onCancel={() => setDetailModal(false)}
+      >
+        {selectedDetail && (
+          <>
+            <Descriptions bordered column={1}>
+              <Descriptions.Item label="Mã đơn">
+                {selectedDetail._id}
+              </Descriptions.Item>
 
+              <Descriptions.Item label="Trạng thái">
+                {getStatusText(
+                  selectedDetail.orderStatus,
+                  selectedDetail.cancelStatus,
+                  selectedDetail.paymentStatus,
+                )}
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Thanh toán">
+                {PAYMENT_STATUS_LABEL[selectedDetail.paymentStatus]}
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Tổng tiền">
+                {Number(
+                  selectedDetail.finalPrice || selectedDetail.totalPrice,
+                ).toLocaleString("vi-VN")}{" "}
+                ₫
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Ngày đặt">
+                {new Date(selectedDetail.createdAt).toLocaleString("vi-VN")}
+              </Descriptions.Item>
+            </Descriptions>
+
+            <Divider />
+
+            <Title level={5}>Danh sách sản phẩm</Title>
+
+            {selectedDetail.products?.map((item: any, index: number) => (
+              <Card key={index} size="small" style={{ marginBottom: 10 }}>
+                <Row justify="space-between">
+                  <Col>
+                    <strong>{item.name}</strong>
+                  </Col>
+
+                  <Col>
+                    {item.quantity} x{" "}
+                    {Number(item.price).toLocaleString("vi-VN")} ₫
+                  </Col>
+                </Row>
+              </Card>
+            ))}
+
+            {(selectedDetail.cancelStatus === "REQUESTED" ||
+              selectedDetail.orderStatus === "CANCELLED") && (
+              <>
+                <Divider />
+
+                <Card
+                  size="small"
+                  style={{
+                    background:
+                      selectedDetail.orderStatus === "CANCELLED"
+                        ? "#fff2f0"
+                        : "#fffbe6",
+                  }}
+                >
+                  <Text strong>Lý do hủy:</Text>
+
+                  <br />
+
+                  <Text>{selectedDetail.cancelReason || "Không có lý do"}</Text>
+
+                  {selectedDetail.cancelMessage && (
+                    <>
+                      <br />
+                      <br />
+
+                      <Text strong>Ghi chú:</Text>
+
+                      <br />
+
+                      <Text>{selectedDetail.cancelMessage}</Text>
+                    </>
+                  )}
+                </Card>
+              </>
+            )}
+          </>
+        )}
+      </Modal>
       <Modal
         title="Hủy đơn hàng"
         open={cancelModal}

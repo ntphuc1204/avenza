@@ -18,7 +18,6 @@ import { useRouter } from "next/navigation";
 
 import { sendRequest } from "@/utils/api";
 import orderDetailsApi from "@/utils/orderDetails.api";
-import OrderDetailEditModal from "./orderDetail.edit";
 
 interface IOrderProduct {
   productId: string;
@@ -595,8 +594,38 @@ const OrderTable = ({ data, accessToken }: IProps) => {
                                   <div>Số lượng: {product.quantity}</div>
 
                                   <div>
-                                    Giá:{" "}
-                                    {product.price?.toLocaleString("vi-VN")} đ
+                                    Giá bán:
+                                    <strong>
+                                      {" "}
+                                      {Number(
+                                        product.price || 0,
+                                      ).toLocaleString("vi-VN")}{" "}
+                                      đ
+                                    </strong>
+                                  </div>
+
+                                  <div>
+                                    Tổng giá vốn:
+                                    <strong style={{ color: "#cf1322" }}>
+                                      {" "}
+                                      {(
+                                        Number(product.costPrice || 0) *
+                                        Number(product.quantity || 0)
+                                      ).toLocaleString("vi-VN")}{" "}
+                                      đ
+                                    </strong>
+                                  </div>
+                                  <div>
+                                    Lợi nhuận dòng:
+                                    <strong style={{ color: "#389e0d" }}>
+                                      {" "}
+                                      {(
+                                        (Number(product.price || 0) -
+                                          Number(product.costPrice || 0)) *
+                                        Number(product.quantity || 0)
+                                      ).toLocaleString("vi-VN")}{" "}
+                                      đ
+                                    </strong>
                                   </div>
                                 </div>
                               </div>
@@ -653,25 +682,6 @@ const OrderTable = ({ data, accessToken }: IProps) => {
           pageSizeOptions={["10", "20", "50", "100"]}
         />
       </div>
-
-      <OrderDetailEditModal
-        visible={detailModalVisible}
-        onClose={() => {
-          setDetailModalVisible(false);
-          setEditingDetail(null);
-        }}
-        detail={editingDetail}
-        onSaved={async () => {
-          if (!editingDetail) return;
-          const res = await orderDetailsApi.findByOrder(
-            editingDetail.orderId || editingDetail.orderId,
-          );
-          setOrderDetailsMap((prev) => ({
-            ...prev,
-            [editingDetail.orderId]: res?.data || res || [],
-          }));
-        }}
-      />
     </div>
   );
 };
