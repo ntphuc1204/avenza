@@ -10,6 +10,7 @@ import {
   UserOutlined,
   LogoutOutlined,
   MenuOutlined,
+  CommentOutlined,
 } from "@ant-design/icons";
 
 import {
@@ -32,6 +33,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { sendRequest } from "@/utils/api";
+import chatApi from "@/utils/chat.api";
 import { io, Socket } from "socket.io-client";
 
 const { Header } = Layout;
@@ -105,6 +107,17 @@ const GuestHeader = () => {
       setCartCount(total);
     };
 
+    const loadChatUnreadCount = async () => {
+      if (!session?.user?.access_token || session.user.role === "ADMIN") {
+        setChatUnreadCount(0);
+        return;
+      }
+
+      const res = await chatApi.getMyUnreadCount(session.user.access_token);
+
+      setChatUnreadCount(res?.data?.count ?? res?.count ?? 0);
+    };
+
     const handleNotificationsRead = () => {
       loadNotificationCount();
     };
@@ -121,6 +134,8 @@ const GuestHeader = () => {
     loadNotificationCount();
 
     loadCartCount();
+
+    loadChatUnreadCount();
 
     // EVENTS
     window.addEventListener("notificationsRead", handleNotificationsRead);
@@ -165,6 +180,12 @@ const GuestHeader = () => {
     socket.on("chat:message", (data: any) => {
       if (data?.sender === "ADMIN") {
         setChatUnreadCount((prev) => prev + 1);
+      }
+    });
+
+    socket.on("chat:read", (data: any) => {
+      if (data?.reader === "USER") {
+        setChatUnreadCount(0);
       }
     });
 
@@ -275,14 +296,13 @@ const GuestHeader = () => {
       {session?.user && session.user.role !== "ADMIN" && (
         <Link href="/chat" onClick={() => setChatUnreadCount(0)}>
           <Badge
-            count={chatUnreadCount}
-            size="small"
+            dot={chatUnreadCount > 0}
             offset={[6, -4]}
             style={{ backgroundColor: "#ff4d4f" }}
           >
             <Button
               type="text"
-              icon={<MenuOutlined />}
+              icon={<CommentOutlined />}
               style={{
                 width: screens.md ? "auto" : "100%",
               }}

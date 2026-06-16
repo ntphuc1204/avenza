@@ -4,15 +4,29 @@ import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
-import { Card, Input, Button, Space, Spin, Empty, message, Avatar } from "antd";
+import {
+  Avatar,
+  Button,
+  Card,
+  Empty,
+  Image,
+  Input,
+  Popover,
+  Space,
+  Spin,
+  message,
+} from "antd";
 
-import { SendOutlined } from "@ant-design/icons";
+import { PictureOutlined, SendOutlined, SmileOutlined } from "@ant-design/icons";
 
 import GuestLayout from "@/components/layout/guest.layout";
 
 import chatApi from "@/utils/chat.api";
+import { normalizeImageUrl } from "@/utils/image";
 
 import io from "socket.io-client";
+
+const CHAT_EMOJIS = ["😀", "😍", "😂", "😊", "👍", "🙏", "🎉", "❤️", "🔥", "✅"];
 
 const ChatPage = () => {
   const { data: session } = useSession();
@@ -22,6 +36,10 @@ const ChatPage = () => {
   const [messages, setMessages] = useState<any[]>([]);
 
   const [input, setInput] = useState("");
+
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+
+  const [imagePreview, setImagePreview] = useState("");
 
   const [loading, setLoading] = useState(false);
 
@@ -34,6 +52,8 @@ const ChatPage = () => {
   const messageContainerRef = useRef<HTMLDivElement>(null);
 
   const typingTimeoutRef = useRef<any>(null);
+
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   // =========================
   // INIT
@@ -59,6 +79,18 @@ const ChatPage = () => {
   useEffect(() => {
     scrollToBottom(false);
   }, [messages]);
+
+  useEffect(() => {
+    if (!selectedImage) {
+      setImagePreview("");
+      return;
+    }
+
+    const url = URL.createObjectURL(selectedImage);
+    setImagePreview(url);
+
+    return () => URL.revokeObjectURL(url);
+  }, [selectedImage]);
 
   const scrollToBottom = (smooth = true) => {
     if (messageContainerRef.current) {
@@ -173,9 +205,26 @@ const ChatPage = () => {
           return [...prev, data];
         });
 
+        if (data?.sender === "ADMIN") {
+          socket.emit("chat:read", {
+            userId: session?.user?._id,
+            role: "USER",
+          });
+        }
+
         setTimeout(() => {
           scrollToBottom();
         }, 50);
+      });
+
+      socket.on("chat:read", (data: any) => {
+        if (data?.reader !== "ADMIN") return;
+
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.sender === "USER" ? { ...msg, readByAdmin: true } : msg,
+          ),
+        );
       });
 
       // =========================
@@ -188,6 +237,11 @@ const ChatPage = () => {
       });
 
       socketRef.current = socket;
+
+      socket.emit("chat:read", {
+        userId: session?.user?._id,
+        role: "USER",
+      });
 
       return () => {
         socket.disconnect();
@@ -205,12 +259,27 @@ const ChatPage = () => {
     // chống spam enter
     if (sending) return;
 
-    if (!input.trim() || !session?.user?.access_token) return;
+    if ((!input.trim() && !selectedImage) || !session?.user?.access_token) {
+      return;
+    }
 
     setSending(true);
 
     try {
       const currentInput = input.trim();
+      const imageFile = selectedImage;
+      let imageUrl = "";
+
+      if (imageFile) {
+        const uploadRes = await chatApi.uploadImage(
+          imageFile,
+          session.user.access_token,
+        );
+        imageUrl = uploadRes?.data?.url || uploadRes?.url || "";
+        if (!imageUrl) {
+          throw new Error("Upload image failed");
+        }
+      }
 
       const tempId = `t-${Date.now()}-${Math.random()
         .toString(36)
@@ -220,6 +289,7 @@ const ChatPage = () => {
       const tempMsg = {
         _tempId: tempId,
         message: currentInput,
+        imageUrl,
         sender: "USER",
         createdAt: new Date().toISOString(),
         pending: true,
@@ -229,6 +299,7 @@ const ChatPage = () => {
       setMessages((prev) => [...prev, tempMsg]);
 
       setInput("");
+      setSelectedImage(null);
 
       setTimeout(() => {
         scrollToBottom();
@@ -237,6 +308,7 @@ const ChatPage = () => {
       const res = await chatApi.sendMessage(
         {
           message: currentInput,
+          imageUrl,
           tempId,
         },
         session.user.access_token,
@@ -271,6 +343,41 @@ const ChatPage = () => {
       });
     } catch (e) {}
   };
+
+  const handlePickImage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      message.error("Vui lòng chọn file ảnh");
+      return;
+    }
+
+    setSelectedImage(file);
+  };
+
+  const emojiContent = (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(5, 32px)",
+        gap: 6,
+      }}
+    >
+      {CHAT_EMOJIS.map((emoji) => (
+        <Button
+          key={emoji}
+          type="text"
+          onClick={() => setInput((prev) => `${prev}${emoji}`)}
+          style={{ fontSize: 18, padding: 0 }}
+        >
+          {emoji}
+        </Button>
+      ))}
+    </div>
+  );
 
   // =========================
   // NOT LOGIN
@@ -377,14 +484,29 @@ const ChatPage = () => {
                         opacity: msg.pending ? 0.7 : 1,
                       }}
                     >
-                      <div
-                        style={{
-                          wordBreak: "break-word",
-                          lineHeight: 1.5,
-                        }}
-                      >
-                        {msg.message}
-                      </div>
+                      {msg.imageUrl && (
+                        <Image
+                          src={normalizeImageUrl(msg.imageUrl)}
+                          alt="Chat image"
+                          style={{
+                            maxWidth: 220,
+                            borderRadius: 10,
+                            display: "block",
+                            marginBottom: msg.message ? 8 : 0,
+                          }}
+                        />
+                      )}
+
+                      {msg.message && (
+                        <div
+                          style={{
+                            wordBreak: "break-word",
+                            lineHeight: 1.5,
+                          }}
+                        >
+                          {msg.message}
+                        </div>
+                      )}
 
                       <div
                         style={{
@@ -429,12 +551,49 @@ const ChatPage = () => {
           </div>
 
           {/* INPUT */}
+          {imagePreview && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 10,
+                padding: 8,
+                border: "1px solid #e5e7eb",
+                borderRadius: 10,
+                background: "#fff",
+              }}
+            >
+              <Image
+                src={imagePreview}
+                alt="Anh da chon"
+                width={72}
+                height={72}
+                style={{ objectFit: "cover", borderRadius: 8 }}
+              />
+              <Button size="small" onClick={() => setSelectedImage(null)}>
+                Bo anh
+              </Button>
+            </div>
+          )}
+
           <Space.Compact
             style={{
               width: "100%",
             }}
             block
           >
+            <Button
+              icon={<PictureOutlined />}
+              size="large"
+              disabled={sending}
+              onClick={() => imageInputRef.current?.click()}
+            />
+
+            <Popover content={emojiContent} trigger="click">
+              <Button icon={<SmileOutlined />} size="large" disabled={sending} />
+            </Popover>
+
             <Input
               placeholder="Nhập tin nhắn..."
               value={input}
@@ -469,6 +628,14 @@ const ChatPage = () => {
               Gửi
             </Button>
           </Space.Compact>
+
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={handlePickImage}
+          />
         </Card>
       </div>
     </GuestLayout>
