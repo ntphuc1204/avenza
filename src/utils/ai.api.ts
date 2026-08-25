@@ -138,7 +138,7 @@ export const streamAiChat = async (
 
         if (parsed.type === "error" || parsed.error) {
           error = parsed.message || "AI Error";
-          handlers.onError?.(error);
+          handlers.onError?.(error || "AI Error");
           continue;
         }
 

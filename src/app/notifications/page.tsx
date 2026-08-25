@@ -1,13 +1,21 @@
 "use client";
 
-import { Badge, Button, Card, Empty, List, notification, Space, Typography } from "antd";
+import {
+  Badge,
+  Button,
+  Card,
+  Empty,
+  List,
+  notification,
+  Space,
+  Typography,
+} from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import GuestLayout from "@/components/layout/guest.layout";
 import { sendRequest } from "@/utils/api";
 import { CopyOutlined } from "@ant-design/icons";
-
 
 const NotificationsPage = () => {
   const { Title, Text } = Typography;
@@ -116,6 +124,7 @@ const NotificationsPage = () => {
                 key={item._id}
                 actions={[
                   <Button
+                    key={`detail-${item._id}`}
                     type="link"
                     onClick={() => router.push(item.link || "/orders")}
                   >
@@ -149,12 +158,13 @@ const NotificationsPage = () => {
                         <Text strong>{item.title}</Text>
 
                         {item.data?.orderId && (
-                          <>
+                          <span key={`order-${item._id}`}>
                             <Text type="secondary">
                               #{item.data.orderId.slice(-8)}
                             </Text>
 
                             <Button
+                              key={`copy-${item._id}`}
                               type="text"
                               size="small"
                               icon={<CopyOutlined />}
@@ -163,7 +173,7 @@ const NotificationsPage = () => {
                                 handleCopyOrderCode(item.data.orderId);
                               }}
                             />
-                          </>
+                          </span>
                         )}
                       </div>
 

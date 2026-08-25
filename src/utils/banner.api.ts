@@ -1,4 +1,3 @@
-import { IRequest } from "@/types/next-auth.d";
 import { sendRequest } from "./api";
 
 // Get all banners

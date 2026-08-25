@@ -12,23 +12,45 @@ const RoleCreateModal = ({ visible, onClose, editing }: any) => {
   const { data: session } = useSession();
 
   useEffect(() => {
-    if (editing) form.setFieldsValue(editing);
-    else form.resetFields();
-  }, [editing]);
+    if (editing) {
+      form.setFieldsValue(editing);
+    } else {
+      form.resetFields();
+    }
+  }, [editing, form]);
 
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
-      if (editing?._id) {
-        await rolesApi.update(editing._id, values, session?.user?.access_token);
-        notification.success({ message: "Cập nhật role thành công" });
-      } else {
-        await rolesApi.create(values, session?.user?.access_token);
-        notification.success({ message: "Tạo role thành công" });
+
+      const token = session?.user?.access_token;
+
+      if (!token) {
+        notification.error({
+          message: "Không tìm thấy access token. Vui lòng đăng nhập lại.",
+        });
+        return;
       }
+
+      if (editing?._id) {
+        await rolesApi.update(editing._id, values, token);
+
+        notification.success({
+          message: "Cập nhật role thành công",
+        });
+      } else {
+        await rolesApi.create(values, token);
+
+        notification.success({
+          message: "Tạo role thành công",
+        });
+      }
+
       onClose();
     } catch (e: any) {
-      notification.error({ message: e?.message || "Lỗi" });
+      notification.error({
+        message: e?.message || "Lỗi",
+      });
     }
   };
 
@@ -44,9 +66,18 @@ const RoleCreateModal = ({ visible, onClose, editing }: any) => {
           name="name"
           label="Tên"
           rules={[
-            { required: true, message: "Tên role không được trống" },
-            { min: 2, message: "Tên tối thiểu 2 ký tự" },
-            { max: 100, message: "Tên tối đa 100 ký tự" },
+            {
+              required: true,
+              message: "Tên role không được trống",
+            },
+            {
+              min: 2,
+              message: "Tên tối thiểu 2 ký tự",
+            },
+            {
+              max: 100,
+              message: "Tên tối đa 100 ký tự",
+            },
             {
               pattern: /^[A-Z_]+$/,
               message: "Tên role chỉ chứa chữ hoa và dấu gạch dưới",
@@ -59,7 +90,12 @@ const RoleCreateModal = ({ visible, onClose, editing }: any) => {
         <Form.Item
           name="description"
           label="Mô tả"
-          rules={[{ max: 500, message: "Mô tả tối đa 500 ký tự" }]}
+          rules={[
+            {
+              max: 500,
+              message: "Mô tả tối đa 500 ký tự",
+            },
+          ]}
         >
           <Input placeholder="Mô tả role" />
         </Form.Item>
@@ -68,13 +104,14 @@ const RoleCreateModal = ({ visible, onClose, editing }: any) => {
           <Select
             mode="tags"
             placeholder="Thêm permissions (ví dụ: READ_PRODUCTS)"
-          ></Select>
+          />
         </Form.Item>
 
         <div style={{ textAlign: "right" }}>
           <Button style={{ marginRight: 8 }} onClick={onClose}>
             Hủy
           </Button>
+
           <Button type="primary" onClick={handleOk}>
             Lưu
           </Button>

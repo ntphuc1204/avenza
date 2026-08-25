@@ -40,7 +40,12 @@ const RolesTable = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      await rolesApi.remove(id, session?.user?.access_token);
+      const token = session?.user?.access_token;
+      if (!token) {
+        notification.error({ message: "Bạn chưa đăng nhập" });
+        return;
+      }
+      await rolesApi.remove(id, token);
       notification.success({ message: "Xóa role thành công" });
       fetchRoles();
     } catch (e) {

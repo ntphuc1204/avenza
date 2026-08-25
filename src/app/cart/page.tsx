@@ -441,7 +441,11 @@ const CartPage = () => {
               renderItem={(item: any) => (
                 <List.Item
                   actions={[
-                    <Button danger onClick={() => removeItem(item.productId)}>
+                    <Button
+                      key={`del-${item.productId}`}
+                      danger
+                      onClick={() => removeItem(item.productId)}
+                    >
                       Xóa
                     </Button>,
                   ]}

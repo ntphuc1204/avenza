@@ -220,12 +220,19 @@ const AiChatPanel = ({
 
       if (!u) return t.trim();
 
-      const normalize = (s: string) =>
-        String(s || "")
+      const normalize = (s: string) => {
+        let re: RegExp;
+        try {
+          re = new RegExp("[^\\p{L}\\p{N}\\s]", "gu");
+        } catch {
+          re = /[^a-zA-Z0-9\s]/g;
+        }
+        return String(s || "")
           .toLowerCase()
-          .replace(/[^^\p{L}\p{N}\s]/gu, "")
+          .replace(re, "")
           .replace(/\s+/g, " ")
           .trim();
+      };
 
       try {
         const nT = normalize(t);
