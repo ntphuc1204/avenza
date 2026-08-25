@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { sendRequest } from "@/utils/api";
 import { normalizeImageUrl } from "@/utils/image";
+import recommendationApi from "@/utils/recommendation.api";
 import { useState } from "react";
 
 const { Text, Title } = Typography;
@@ -44,6 +45,8 @@ const ProductCard = ({ product, onAddToCart }: IProductCardProps) => {
       });
 
       if (res?.data) {
+        recommendationApi.trackCart(product._id, session.user.access_token);
+
         message.success("Đã thêm vào giỏ hàng");
 
         // Đổi nút thành "Xem giỏ hàng"

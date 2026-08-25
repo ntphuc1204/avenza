@@ -20,12 +20,24 @@ import {
   SearchOutlined,
   SendOutlined,
   SmileOutlined,
+  LeftOutlined,
 } from "@ant-design/icons";
 import chatApi from "@/utils/chat.api";
 import { normalizeImageUrl } from "@/utils/image";
 import io from "socket.io-client";
 
-const CHAT_EMOJIS = ["😀", "😍", "😂", "😊", "👍", "🙏", "🎉", "❤️", "🔥", "✅"];
+const CHAT_EMOJIS = [
+  "\u{1F600}",
+  "\u{1F60D}",
+  "\u{1F602}",
+  "\u{1F60A}",
+  "\u{1F44D}",
+  "\u{1F64F}",
+  "\u{1F389}",
+  "\u2764\uFE0F",
+  "\u{1F525}",
+  "\u2705",
+];
 
 const formatTime = (value?: string) => {
   if (!value) return "";
@@ -74,6 +86,8 @@ const AdminChatPage = () => {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
   const [userTyping, setUserTyping] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showThreadsMobile, setShowThreadsMobile] = useState(true);
 
   const socketRef = useRef<any>(null);
   const messageContainerRef = useRef<HTMLDivElement>(null);
@@ -124,6 +138,18 @@ const AdminChatPage = () => {
 
     return cleanup;
   }, [session?.user?.access_token]);
+
+  useEffect(() => {
+    const onResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (!mobile) setShowThreadsMobile(true);
+    };
+
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   useEffect(() => {
     if (threads.length > 0 && !selectedUserId) {
@@ -236,11 +262,33 @@ const AdminChatPage = () => {
 
       socket.on("chat:message", (data: any) => {
         const activeUserId = selectedUserIdRef.current;
+        const messageUserId = String(data?.userId || "");
 
-        if (activeUserId && data.userId === activeUserId) {
+        if (activeUserId && messageUserId === activeUserId) {
           setMessages((prev) => {
+            // duplicate theo _id
             if (data?._id && prev.some((m) => m._id === data._id)) {
               return prev;
+            }
+
+            // tìm temp message vừa gửi
+            const tempIndex = prev.findIndex(
+              (m) =>
+                m.pending &&
+                m.sender === "ADMIN" &&
+                m.message === data.message &&
+                m.imageUrl === data.imageUrl,
+            );
+
+            // replace temp bằng message thật
+            if (tempIndex !== -1) {
+              const next = [...prev];
+              next[tempIndex] = {
+                ...data,
+                readByAdmin: true,
+                pending: false,
+              };
+              return next;
             }
 
             return [...prev, { ...data, readByAdmin: true }];
@@ -301,6 +349,7 @@ const AdminChatPage = () => {
     setSelectedUserId(userId);
     setSelectedImage(null);
     markThreadReadLocal(userId);
+    if (isMobile) setShowThreadsMobile(false);
   };
 
   const handleSend = async () => {
@@ -373,14 +422,6 @@ const AdminChatPage = () => {
       const msg = res?.data || res;
 
       if (msg?._id) {
-        setMessages((prev) =>
-          prev.map((item) =>
-            item._tempId === tempId
-              ? { ...msg, userId: selectedUserId, pending: false }
-              : item,
-          ),
-        );
-
         loadThreads();
       } else {
         setMessages((prev) => prev.filter((item) => item._tempId !== tempId));
@@ -462,7 +503,7 @@ const AdminChatPage = () => {
         height: "calc(100vh - 96px)",
         minHeight: 620,
         display: "grid",
-        gridTemplateColumns: "340px minmax(0, 1fr)",
+        gridTemplateColumns: isMobile ? "1fr" : "340px minmax(0, 1fr)",
         background: "#fff",
         border: "1px solid #e5e7eb",
         borderRadius: 8,
@@ -472,9 +513,11 @@ const AdminChatPage = () => {
       <aside
         style={{
           borderRight: "1px solid #e5e7eb",
-          display: "flex",
+          display: isMobile && !showThreadsMobile ? "none" : "flex",
           flexDirection: "column",
           minWidth: 0,
+          height: "100%",
+          minHeight: 0,
         }}
       >
         <div style={{ padding: 16, borderBottom: "1px solid #eef0f3" }}>
@@ -486,7 +529,7 @@ const AdminChatPage = () => {
               color: "#111827",
             }}
           >
-            Ho tro chat
+            Hỗ trợ chat
           </div>
 
           <Input
@@ -579,7 +622,8 @@ const AdminChatPage = () => {
                       }}
                     >
                       {thread.lastSender === "ADMIN" ? "Ban: " : ""}
-                      {thread.lastMessage || (thread.lastImageUrl ? "Anh" : "Tin nhan moi")}
+                      {thread.lastMessage ||
+                        (thread.lastImageUrl ? "Anh" : "Tin nhan moi")}
                     </div>
                   </div>
 
@@ -617,9 +661,10 @@ const AdminChatPage = () => {
 
       <main
         style={{
-          display: "flex",
+          display: isMobile && showThreadsMobile ? "none" : "flex",
           flexDirection: "column",
           minWidth: 0,
+          minHeight: 0,
           background: "#f7f8fb",
         }}
       >
@@ -636,6 +681,14 @@ const AdminChatPage = () => {
                 gap: 12,
               }}
             >
+              {isMobile && !showThreadsMobile && (
+                <Button
+                  type="text"
+                  icon={<LeftOutlined />}
+                  onClick={() => setShowThreadsMobile(true)}
+                />
+              )}
+
               <Avatar size={42} style={{ backgroundColor: "#1677ff" }}>
                 {getUserName(selectedThread)[0]?.toUpperCase() || "U"}
               </Avatar>
@@ -664,6 +717,7 @@ const AdminChatPage = () => {
               ref={messageContainerRef}
               style={{
                 flex: 1,
+                minHeight: 0,
                 overflowY: "auto",
                 padding: 18,
               }}
@@ -752,7 +806,7 @@ const AdminChatPage = () => {
                         </div>
 
                         {showSeen && (
-                          <Tooltip title="Khach hang da xem tin nhan">
+                          <Tooltip title="Khách hàng đã xem tin nhắn">
                             <div
                               style={{
                                 marginTop: 2,
@@ -764,7 +818,7 @@ const AdminChatPage = () => {
                               }}
                             >
                               <CheckCircleOutlined />
-                              <span>Da xem</span>
+                              <span>Đã xem</span>
                             </div>
                           </Tooltip>
                         )}

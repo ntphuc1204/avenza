@@ -296,9 +296,17 @@ const GuestHeader = () => {
       {session?.user && session.user.role !== "ADMIN" && (
         <Link href="/chat" onClick={() => setChatUnreadCount(0)}>
           <Badge
-            dot={chatUnreadCount > 0}
-            offset={[6, -4]}
-            style={{ backgroundColor: "#ff4d4f" }}
+            count={chatUnreadCount}
+            overflowCount={99}
+            offset={[-2, 4]}
+            size="small"
+            styles={{
+              indicator: {
+                backgroundColor: "#ff424f",
+                fontWeight: 700,
+                boxShadow: "0 0 0 2px #fff",
+              },
+            }}
           >
             <Button
               type="text"

@@ -9,7 +9,8 @@ import { Button, Layout } from "antd";
 import { useContext } from "react";
 import { DownOutlined } from "@ant-design/icons";
 import type { MenuProps } from "antd";
-import { Dropdown, Space } from "antd";
+import { Dropdown, Space, Popover } from "antd";
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -21,6 +22,27 @@ const AdminHeader = (props: any) => {
 
   const { Header } = Layout;
   const { collapseMenu, setCollapseMenu } = useContext(AdminContext)!;
+
+  const [stockStats, setStockStats] = useState<any | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const base = process.env.NEXT_PUBLIC_BACKEND_URL || "";
+        const res = await fetch(`${base}/api/v1/stock-imports/stats`, {
+          method: "GET",
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.ok) {
+          setStockStats(json?.data || json || null);
+        }
+      } catch (err) {
+        // ignore
+      }
+    };
+
+    load();
+  }, []);
 
   const items: MenuProps["items"] = [
     {
@@ -50,7 +72,14 @@ const AdminHeader = (props: any) => {
           alignItems: "center",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            paddingLeft: 20,
+          }}
+        >
           <Button
             type="default"
             icon={<HomeOutlined />}
@@ -58,6 +87,41 @@ const AdminHeader = (props: any) => {
           >
             Trang chủ
           </Button>
+
+          <Popover
+            placement="bottomLeft"
+            title="Thống kê nhập hàng"
+            content={
+              stockStats ? (
+                <div style={{ minWidth: 220 }}>
+                  <div>
+                    <b>Tổng phiếu:</b> {stockStats.totalCount}
+                  </div>
+                  <div>
+                    <b>Tổng SL:</b> {stockStats.totalQuantity}
+                  </div>
+                  <div>
+                    <b>Tổng giá trị:</b>{" "}
+                    {Number(stockStats.totalValue || 0).toLocaleString("vi-VN")}
+                    ₫
+                  </div>
+                  <div style={{ marginTop: 8 }}>
+                    <b>Mới nhất:</b>
+                    <ul style={{ paddingLeft: 16, marginTop: 6 }}>
+                      {(stockStats.recent || []).map((r: any) => (
+                        <li key={r._id} style={{ fontSize: 12 }}>
+                          {r.productId?.name || r.productId} — {r.quantity} —{" "}
+                          {Number(r.importPrice || 0).toLocaleString("vi-VN")}₫
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ) : (
+                <div>Không có dữ liệu</div>
+              )
+            }
+          ></Popover>
         </div>
 
         <Dropdown menu={{ items }}>

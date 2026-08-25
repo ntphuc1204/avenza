@@ -23,6 +23,7 @@ import ProductCard from "@/components/guest/product.card";
 import { sendRequest } from "@/utils/api";
 import { bannerApi } from "@/utils/banner.api";
 import { normalizeImageUrl } from "@/utils/image";
+import recommendationApi from "@/utils/recommendation.api";
 
 import { useSearchParams } from "next/navigation";
 
@@ -312,6 +313,12 @@ const HomePage = () => {
 
     loadAllProducts(1);
   }, [search, selectedCategory]);
+
+  useEffect(() => {
+    if (search) {
+      recommendationApi.trackSearch(search, session?.user?.access_token);
+    }
+  }, [search, session?.user?.access_token]);
 
   useEffect(() => {
     setAllCurrent(1);

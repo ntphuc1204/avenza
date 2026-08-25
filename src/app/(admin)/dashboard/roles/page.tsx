@@ -1,7 +1,7 @@
 "use client";
 
 import RolesTable from "@/components/admin/roles/roles.table";
-import AdminLayout from "@/components/layout/admin.layout";
+import AdminLayout from "@/app/(admin)/dashboard/layout";
 
 const RolesPage = () => {
   return (

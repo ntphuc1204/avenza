@@ -15,6 +15,7 @@ import {
   Tag,
   Typography,
   message,
+  Tabs,
 } from "antd";
 import {
   RobotOutlined,
@@ -59,6 +60,7 @@ export interface ChatMessage {
   id: string;
   sender: "user" | "ai";
   message: string;
+  createdAt?: string;
   meta?: AiChatMeta;
   streaming?: boolean;
 }
@@ -138,10 +140,15 @@ const AiChatPanel = ({
   const mapHistoryItems = (items: any[]): ChatMessage[] =>
     items
       .filter((item) => item?.message?.trim())
+      .sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      )
       .map((item: any, index: number) => ({
         id: String(item._id || `hist-${index}`),
         sender: item.sender === "ai" ? "ai" : "user",
         message: String(item.message || ""),
+        createdAt: item.createdAt,
       }));
 
   const loadHistory = useCallback(
@@ -163,21 +170,7 @@ const AiChatPanel = ({
           }
         }
 
-        setMessages((prev) => {
-          if (!silent) return deduped;
-
-          // merge local unsaved user messages (ids starting with 'user-')
-          const localUser = prev.filter((m) => m.id?.startsWith?.("user-"));
-
-          const extras = localUser.filter(
-            (lu) =>
-              !deduped.some(
-                (d) => d.sender === lu.sender && d.message === lu.message,
-              ),
-          );
-
-          return [...deduped, ...extras];
-        });
+        setMessages(deduped);
       } catch (err: any) {
         if (!silent) {
           message.error(err?.message || "Không tải được lịch sử");
@@ -287,19 +280,19 @@ const AiChatPanel = ({
             result.text ||
             result.error ||
             "AI không trả lời. Vui lòng thử lại.";
+
           const sanitized = sanitizeAiText(raw, userMsg);
-          console.debug("[AiChat] onDone", {
-            aiId,
-            raw,
-            sanitized,
-            meta: result.meta,
-          });
+
           updateAiMessage(aiId, {
             message: sanitized,
             meta: result.meta,
             streaming: false,
           });
-          await loadHistory(true);
+
+          // reload sau khi backend đã lưu xong
+          setTimeout(() => {
+            loadHistory(false);
+          }, 500);
         },
       });
     } catch {
@@ -314,7 +307,9 @@ const AiChatPanel = ({
           meta: fallback,
           streaming: false,
         });
-        await loadHistory(true);
+        setTimeout(() => {
+          loadHistory(false);
+        }, 500);
       } catch (fallbackErr: any) {
         updateAiMessage(aiId, {
           message: fallbackErr?.message || "Không thể kết nối AI",
@@ -481,65 +476,87 @@ const AiChatPanel = ({
           Gửi
         </Button>
       </Space.Compact>
+    </Card>
+  );
 
+  const recommendationTab = (
+    <Card
+      title="Gợi ý sản phẩm dành cho bạn"
+      extra={
+        <Button loading={recLoading} onClick={handleRecommend}>
+          Làm mới
+        </Button>
+      }
+    >
       <Button
-        style={{ marginTop: 10 }}
+        style={{ marginTop: 10, marginBottom: 20 }}
         loading={recLoading}
         onClick={handleRecommend}
         disabled={loading}
       >
         Gợi ý sản phẩm (AI Engine)
       </Button>
-    </Card>
-  );
-
-  const sidebar = (
-    <Card title="Sản phẩm liên quan">
       {recommendations.length === 0 ? (
-        <Empty description="Chat để AI gợi ý sản phẩm" />
+        <Empty description="Chưa có gợi ý sản phẩm" />
       ) : (
-        recommendations.map((p) => (
-          <div
-            key={p._id}
-            style={{
-              marginBottom: 10,
-              padding: 12,
-              borderRadius: 8,
-              border: "1px solid #f0f0f0",
-              background: "#fff",
-            }}
-          >
-            <Text strong>{p.name}</Text>
-            <div>
-              <Text>{formatPrice(p.price)}</Text>
-            </div>
-            {(p.categoryId?.name || p.category) && (
-              <Tag color="blue">{p.categoryId?.name || p.category}</Tag>
-            )}
-            {p._id && (
-              <div style={{ marginTop: 6 }}>
-                <Link href={`/product/${p._id}`}>Xem sản phẩm</Link>
-              </div>
-            )}
-          </div>
-        ))
+        <Row gutter={[12, 12]}>
+          {recommendations.map((p) => (
+            <Col span={24} key={p._id}>
+              <Card size="small">
+                <Text strong>{p.name}</Text>
+
+                <div style={{ marginTop: 6 }}>
+                  <Text>{formatPrice(p.price)}</Text>
+                </div>
+
+                {(p.categoryId?.name || p.category) && (
+                  <Tag color="blue" style={{ marginTop: 8 }}>
+                    {p.categoryId?.name || p.category}
+                  </Tag>
+                )}
+
+                <div style={{ marginTop: 8 }}>
+                  <Link href={`/product/${p._id}`}>Xem sản phẩm</Link>
+                </div>
+              </Card>
+            </Col>
+          ))}
+        </Row>
       )}
     </Card>
   );
 
-  if (!showSidebar) {
-    return <div style={{ maxWidth: 900, margin: "0 auto" }}>{chatColumn}</div>;
-  }
-
   return (
-    <Row gutter={[20, 20]}>
-      <Col xs={24} lg={14}>
-        {chatColumn}
-      </Col>
-      <Col xs={24} lg={10}>
-        {sidebar}
-      </Col>
-    </Row>
+    <div
+      style={{
+        maxWidth: 1200,
+        margin: "0 auto",
+      }}
+    >
+      <Tabs
+        defaultActiveKey="chat"
+        items={[
+          {
+            key: "chat",
+            label: (
+              <span>
+                <RobotOutlined /> Chat AI
+              </span>
+            ),
+            children: chatColumn,
+          },
+          {
+            key: "recommend",
+            label: (
+              <span>
+                <ShoppingCartOutlined /> Gợi ý sản phẩm
+              </span>
+            ),
+            children: recommendationTab,
+          },
+        ]}
+      />
+    </div>
   );
 };
 

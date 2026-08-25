@@ -81,6 +81,12 @@ const AdminCard = () => {
   });
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [stockStats, setStockStats] = useState<{
+    totalCount: number;
+    totalQuantity: number;
+    totalValue: number;
+    recent: any[];
+  } | null>(null);
 
   const buildQueryParams = () => {
     const queryParams: Record<string, string> = {};
@@ -137,6 +143,26 @@ const AdminCard = () => {
             orderStatuses: orderRes.data.orderStatuses || {},
             paymentStatuses: orderRes.data.paymentStatuses || {},
           });
+        }
+
+        // fetch stock import stats
+        try {
+          const stockRes = await sendRequest<IBackendRes<any>>({
+            url: `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/stock-imports/stats`,
+            method: "GET",
+            headers,
+          });
+
+          if (stockRes?.data) {
+            setStockStats({
+              totalCount: stockRes.data.totalCount || 0,
+              totalQuantity: stockRes.data.totalQuantity || 0,
+              totalValue: stockRes.data.totalValue || 0,
+              recent: stockRes.data.recent || [],
+            });
+          }
+        } catch (err) {
+          console.error("Error fetching stock stats:", err);
         }
 
         if (seriesRes?.data) {
@@ -362,6 +388,46 @@ const AdminCard = () => {
           </Card>
         </Col>
       </Row>
+      {/* Stock import statistics */}
+      <Row gutter={16} style={{ marginBottom: 16 }}>
+        <Col xs={24} sm={12} md={8}>
+          <Card title="Tổng phiếu nhập" bordered>
+            <div style={{ fontSize: 24, fontWeight: "bold", color: "#722ed1" }}>
+              {stockStats?.totalCount ?? 0}
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={8}>
+          <Card title="Tổng số lượng nhập" bordered>
+            <div style={{ fontSize: 24, fontWeight: "bold", color: "#fa8c16" }}>
+              {stockStats?.totalQuantity ?? 0}
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={8}>
+          <Card title="Tổng giá trị nhập" bordered>
+            <div style={{ fontSize: 24, fontWeight: "bold", color: "#52c41a" }}>
+              {(stockStats?.totalValue ?? 0).toLocaleString("vi-VN")} đ
+            </div>
+          </Card>
+        </Col>
+      </Row>
+
+      {stockStats?.recent && stockStats.recent.length > 0 && (
+        <Row gutter={16} style={{ marginBottom: 16 }}>
+          <Col xs={24}>
+            <Card title="Nhập hàng mới nhất" bordered>
+              <ul style={{ paddingLeft: 16, margin: 0 }}>
+                {stockStats.recent.map((r: any) => (
+                  <li key={r._id} style={{ marginBottom: 6 }}>
+                    <strong>{r.productId?.name || r.productId}</strong> — SL: {r.quantity} — Giá: {Number(r.importPrice || 0).toLocaleString("vi-VN")} đ
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          </Col>
+        </Row>
+      )}
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={12} md={8}>
           <Card title="Tổng đơn hàng" bordered>

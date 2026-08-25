@@ -28,6 +28,7 @@ import ProductCard from "@/components/guest/product.card";
 import ProductReviews from "@/components/guest/product.reviews";
 
 import { sendRequest } from "@/utils/api";
+import recommendationApi from "@/utils/recommendation.api";
 
 import Link from "next/link";
 
@@ -100,6 +101,24 @@ const ProductDetailPage = () => {
   }, [productId]);
 
   useEffect(() => {
+    if (!productId) return;
+
+    const startedAt = Date.now();
+
+    return () => {
+      const timeSpentSeconds = Math.max(
+        1,
+        Math.round((Date.now() - startedAt) / 1000),
+      );
+      recommendationApi.trackView(
+        productId,
+        session?.user?.access_token,
+        timeSpentSeconds,
+      );
+    };
+  }, [productId, session?.user?.access_token]);
+
+  useEffect(() => {
     if (product) loadRelated();
   }, [product]);
 
@@ -124,6 +143,8 @@ const ProductDetailPage = () => {
       });
 
       if (res?.data) {
+        recommendationApi.trackCart(productId, session.user.access_token);
+
         notification.success({
           message: "Đã thêm sản phẩm vào giỏ hàng",
         });
